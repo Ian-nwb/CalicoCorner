@@ -1,29 +1,18 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  Heart,
-  Sparkles,
-  Coins,
-  Cat,
-  Calendar,
-  Image as ImageIcon,
-  MessageSquare,
-  Bell,
-  Plus,
-  Trash2,
-  CheckCircle,
-  Circle,
-  Send,
-  X,
-  LogOut,
-  Eye,
-  EyeOff,
-  BellRing,
-  RotateCw,
-  CheckSquare,
-  User,
-  Compass,
-  Camera
+  Cat, Sparkles, Eye, EyeOff, BellRing, Bell, LogOut, CheckSquare,
+  User, Plus, CheckCircle, Circle, Trash2, Heart, RotateCw, Coins,
+  Calendar, Compass, Image as ImageIcon, Camera, X, Wallet, Settings,
+  TrendingUp, RefreshCw, ExternalLink, ChevronLeft, ChevronRight
 } from 'lucide-react';
+
+// Inject Tailwind CDN script cleanly with global readiness check
+if (typeof document !== 'undefined' && !document.getElementById('tailwind-cdn-script')) {
+  const script = document.createElement('script');
+  script.id = 'tailwind-cdn-script';
+  script.src = 'https://cdn.tailwindcss.com';
+  document.head.appendChild(script);
+}
 
 const playSound = (type) => {
   try {
@@ -142,6 +131,13 @@ export default function App() {
   const [showPassword, setShowPassword] = useState(false);
   const partnerName = 'Trisha & Ian';
 
+  // Chat State
+  const [messages, setMessages] = useState(INITIAL_MESSAGES);
+  const [newMessageText, setNewMessageText] = useState('');
+
+  // Tailwind CSS loaded listener state to prevent unstyled flash
+  const [, setTailwindReady] = useState(typeof window !== 'undefined' && !!window.tailwind);
+
   // App Navigation: Default explicitly set to 'kitten'
   const [activeTab, setActiveTab] = useState('kitten');
 
@@ -182,29 +178,43 @@ export default function App() {
 
   // Feature: Gallery State
   const [gallery, setGallery] = useState(INITIAL_GALLERY);
+  const [galleryPage, setGalleryPage] = useState(1);
+  const [photosPerPage, setPhotosPerPage] = useState(6);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [newImageCaption, setNewImageCaption] = useState('');
   const [newImageCategory] = useState('Memory');
   const [previewImage, setPreviewImage] = useState(null);
   const [activeLightbox, setActiveLightbox] = useState(null);
 
-  // Feature: Messaging State
-  const [messages, setMessages] = useState(INITIAL_MESSAGES);
-  const [newMessageText, setNewMessageText] = useState('');
-  const chatBottomRef = useRef(null);
+  // Feature: Gala Funds (Google Sheets API Connection)
+  const [sheetId, setSheetId] = useState('');
+  const [cellRange, setCellRange] = useState('A1');
+  const [apiKey, setApiKey] = useState('');
+  const [galaFundAmount, setGalaFundAmount] = useState(15000); // Default fallback fund amount
+  const [galaGoal, setGalaGoal] = useState(50000);
+  const [currencySymbol, setCurrencySymbol] = useState('₱');
+  const [isSyncingSheet, setIsSyncingSheet] = useState(false);
+  const [sheetError, setSheetError] = useState('');
+  const [lastSyncedTime, setLastSyncedTime] = useState(null);
+  const [showSheetSettings, setShowSheetSettings] = useState(false);
 
   useEffect(() => {
-    // Inject Tailwind CDN synchronously to prevent FOUC / raw unstyled HTML
-    if (!document.getElementById('tailwind-cdn-script')) {
-      const script = document.createElement('script');
-      script.id = 'tailwind-cdn-script';
-      script.src = 'https://cdn.tailwindcss.com';
-      document.head.appendChild(script);
-    }
-
     // Force light background on root/body to override Vite's default dark CSS template
     document.body.style.backgroundColor = '#FAF6F0';
     document.body.style.color = '#2C2421';
+
+    // Automatically re-render as soon as Tailwind finishes loading in browser
+    if (typeof window !== 'undefined') {
+      if (window.tailwind) {
+        setTailwindReady(true);
+      } else {
+        const script = document.getElementById('tailwind-cdn-script');
+        if (script) {
+          const handleLoad = () => setTailwindReady(true);
+          script.addEventListener('load', handleLoad);
+        }
+      }
+    }
 
     // Check Notification support
     if ('Notification' in window) {
@@ -216,11 +226,79 @@ export default function App() {
     fetchRandomCat();
   }, []);
 
-  useEffect(() => {
-    if (activeTab === 'chat') {
-      chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  // Fetch Gala funds cell from Google Sheet
+  const fetchGalaFunds = async () => {
+    if (!sheetId.trim()) {
+      setSheetError('Please enter a Google Sheet ID or URL.');
+      return;
     }
-  }, [messages, activeTab]);
+
+    setIsSyncingSheet(true);
+    setSheetError('');
+
+    try {
+      // Extract Google Sheet ID if full URL was pasted
+      let extractedId = sheetId.trim();
+      const match = extractedId.match(/\/d\/([a-zA-Z0-9-_]+)/);
+      if (match && match[1]) {
+        extractedId = match[1];
+      }
+
+      let fetchedValue = null;
+
+      // Method 1: If API key is provided, use official Google Sheets API v4
+      if (apiKey.trim()) {
+        const targetRange = cellRange.trim() || 'A1';
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${extractedId}/values/${encodeURIComponent(targetRange)}?key=${apiKey.trim()}`;
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error('Failed to fetch from Google Sheets API. Check your Sheet ID, Range, and API Key.');
+        }
+        const data = await response.json();
+        if (data.values && data.values[0] && data.values[0][0] !== undefined) {
+          fetchedValue = data.values[0][0];
+        }
+      } else {
+        // Method 2: Public Google Sheets Visualization API (gviz/tq) without requiring an API key
+        const gvizUrl = `https://docs.google.com/spreadsheets/d/${extractedId}/gviz/tq?tqx=out:json`;
+        const response = await fetch(gvizUrl);
+        if (!response.ok) {
+          throw new Error('Could not access Google Sheet. Make sure your sheet is set to "Anyone with link can view".');
+        }
+        const text = await response.text();
+        
+        // Extract JSON payload from Google Visualization response wrappers
+        const jsonMatch = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);/);
+        if (jsonMatch && jsonMatch[1]) {
+          const parsed = JSON.parse(jsonMatch[1]);
+          const rows = parsed?.table?.rows;
+          if (rows && rows.length > 0 && rows[0].c && rows[0].c[0]) {
+            // Get raw cell value or formatted value
+            fetchedValue = rows[0].c[0].v !== null ? rows[0].c[0].v : rows[0].c[0].f;
+          }
+        }
+      }
+
+      if (fetchedValue !== null) {
+        // Parse numeric value from cell string (removes currency signs or commas)
+        const numVal = parseFloat(String(fetchedValue).replace(/[^0-9.-]+/g, ''));
+        if (!isNaN(numVal)) {
+          setGalaFundAmount(numVal);
+          setLastSyncedTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+          playSound('success');
+        } else {
+          setSheetError(`Cell value "${fetchedValue}" is not a valid number.`);
+        }
+      } else {
+        setSheetError('No data found in the specified cell.');
+      }
+    } catch (err) {
+      console.error('Google Sheets fetch error:', err);
+      setSheetError(err.message || 'Error connecting to Google Sheets. Check Sheet permissions.');
+    } finally {
+      setIsSyncingSheet(false);
+    }
+  };
 
   const requestNotificationPermission = async () => {
     if (!('Notification' in window)) {
@@ -418,6 +496,7 @@ export default function App() {
       category: newImageCategory
     };
     setGallery([newPhoto, ...gallery]);
+    setGalleryPage(1);
     setShowUploadModal(false);
     setPreviewImage(null);
     setNewImageCaption('');
@@ -465,7 +544,6 @@ export default function App() {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-[#FAF6F0] flex flex-col items-center justify-center p-4 text-[#2C2421] font-sans">
-        {/* Instant CSS rules to guarantee zero FOUC/unstyled display before Tailwind JS initializes */}
         <style>{`
           :root, body, html, #root {
             background-color: #FAF6F0 !important;
@@ -556,7 +634,7 @@ export default function App() {
         }
       `}</style>
 
-      {/* Header without top tab buttons */}
+      {/* Header */}
       <header className="bg-white/90 backdrop-blur-md sticky top-0 z-30 border-b border-[#F0E4D8] px-4 py-3 shadow-xs">
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
@@ -620,7 +698,6 @@ export default function App() {
                   </p>
                 </div>
 
-                {/* Sub-Tabs: Switch between Trisha and Ian */}
                 <div className="flex bg-[#F8F1E9] p-1.5 rounded-2xl border border-[#E8D8C8] self-center sm:self-auto shadow-inner">
                   <button
                     onClick={() => { setTodoUserTab('trisha'); playSound('pop'); }}
@@ -1140,179 +1217,385 @@ export default function App() {
         )}
 
         {/* Gallery Tab */}
-        {activeTab === 'gallery' && (
-          <div className="space-y-6">
-            <div className="bg-white rounded-3xl p-6 shadow-md border border-[#F0E4D8]">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                <div>
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-[#D35400] rounded-full text-xs font-bold mb-2">
-                    <ImageIcon className="w-3.5 h-3.5" />
-                    <span>Memory Vault</span>
-                  </div>
-                  <h2 className="text-2xl font-black text-[#2C2421]">Couple Photo Gallery 🖼️</h2>
-                  <p className="text-xs text-[#8C7A6B]">Store your precious memories together</p>
-                </div>
+        {activeTab === 'gallery' && (() => {
+          const totalPages = Math.ceil(gallery.length / photosPerPage) || 1;
+          const safePage = Math.min(galleryPage, totalPages);
+          const startIndex = (safePage - 1) * photosPerPage;
+          const currentPhotos = gallery.slice(startIndex, startIndex + photosPerPage);
 
-                <button
-                  onClick={() => setShowUploadModal(true)}
-                  className="px-4 py-2.5 bg-gradient-to-r from-[#E67E22] to-[#D35400] text-white font-bold text-xs rounded-xl shadow-md hover:shadow-orange-200 transition-all flex items-center gap-2"
-                >
-                  <Camera className="w-4 h-4" />
-                  <span>Upload Photo</span>
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {gallery.map((photo) => (
-                  <div
-                    key={photo.id}
-                    onClick={() => setActiveLightbox(photo)}
-                    className="group relative aspect-square rounded-2xl overflow-hidden bg-[#F8F1E9] border border-[#F5E6D3] cursor-pointer shadow-sm hover:shadow-md transition-all"
-                  >
-                    <img
-                      src={photo.url}
-                      alt={photo.caption}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-4 flex flex-col justify-end text-white">
-                      <p className="font-bold text-xs">{photo.caption}</p>
-                      <p className="text-[10px] text-amber-200">{photo.date} • {photo.category}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {activeLightbox && (
-              <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-                <div className="relative max-w-2xl w-full bg-white rounded-3xl overflow-hidden shadow-2xl">
-                  <button
-                    onClick={() => setActiveLightbox(null)}
-                    className="absolute top-4 right-4 z-10 p-2 bg-black/50 text-white rounded-full hover:bg-black"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                  <img src={activeLightbox.url} alt={activeLightbox.caption} className="w-full max-h-[60vh] object-contain bg-black" />
-                  <div className="p-6 bg-white">
-                    <h3 className="font-bold text-lg text-[#2C2421]">{activeLightbox.caption}</h3>
-                    <p className="text-xs text-[#8C7A6B]">Saved on {activeLightbox.date}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {showUploadModal && (
-              <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                <div className="bg-white rounded-3xl p-6 max-w-md w-full space-y-4 shadow-2xl">
-                  <div className="flex justify-between items-center border-b border-[#F5E6D3] pb-3">
-                    <h3 className="font-bold text-base text-[#2C2421]">Upload New Moment</h3>
-                    <button onClick={() => setShowUploadModal(false)}>
-                      <X className="w-5 h-5 text-[#8C7A6B]" />
-                    </button>
-                  </div>
-
-                  <form onSubmit={handleAddGalleryPhoto} className="space-y-4">
-                    <div>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageFileChange}
-                        className="w-full text-xs text-[#8C7A6B]"
-                      />
-                    </div>
-                    {previewImage && (
-                      <div className="aspect-video rounded-xl overflow-hidden border border-[#F5E6D3]">
-                        <img src={previewImage} alt="Preview" className="w-full h-full object-cover" />
-                      </div>
-                    )}
-                    <div>
-                      <input
-                        type="text"
-                        required
-                        placeholder="Caption"
-                        value={newImageCaption}
-                        onChange={e => setNewImageCaption(e.target.value)}
-                        className="w-full px-3 py-2 bg-[#FFFDF9] border border-[#E0D0C0] rounded-xl text-xs"
-                      />
-                    </div>
-                    <button
-                      type="submit"
-                      className="w-full py-3 bg-gradient-to-r from-[#E67E22] to-[#D35400] text-white font-bold rounded-xl text-xs shadow-md"
-                    >
-                      Save Memory
-                    </button>
-                  </form>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Chat Tab */}
-        {activeTab === 'chat' && (
-          <div className="space-y-4 max-w-xl mx-auto">
-            <div className="bg-white rounded-3xl shadow-md border border-[#F0E4D8] overflow-hidden flex flex-col h-[70vh]">
-              <div className="bg-[#FFFDF9] p-4 border-b border-[#F0E4D8] flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-[#E67E22] text-white flex items-center justify-center font-bold text-sm shadow-sm">
-                    {partnerName.charAt(0)}
-                  </div>
+          return (
+            <div className="space-y-6">
+              <div className="bg-white rounded-3xl p-6 shadow-md border border-[#F0E4D8]">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                   <div>
-                    <h3 className="font-bold text-sm text-[#2C2421]">{partnerName} 💕</h3>
-                    <p className="text-[10px] text-emerald-600 font-semibold flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Online
-                    </p>
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-[#D35400] rounded-full text-xs font-bold mb-2">
+                      <ImageIcon className="w-3.5 h-3.5" />
+                      <span>Memory Vault</span>
+                    </div>
+                    <h2 className="text-2xl font-black text-[#2C2421]">Couple Photo Gallery 🖼️</h2>
+                    <p className="text-xs text-[#8C7A6B]">Store your precious memories together</p>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    {/* Photos Per Page Selector */}
+                    <div className="flex items-center gap-1.5 bg-[#FAF6F0] border border-[#E8D8C8] px-3 py-1.5 rounded-xl">
+                      <span className="text-[11px] font-bold text-[#8C7A6B]">Show:</span>
+                      <select
+                        value={photosPerPage}
+                        onChange={(e) => {
+                          setPhotosPerPage(Number(e.target.value));
+                          setGalleryPage(1);
+                        }}
+                        className="bg-transparent text-xs font-extrabold text-[#2C2421] outline-none cursor-pointer"
+                      >
+                        <option value={3}>3 / page</option>
+                        <option value={6}>6 / page</option>
+                        <option value={9}>9 / page</option>
+                        <option value={12}>12 / page</option>
+                      </select>
+                    </div>
+
+                    <button
+                      onClick={() => setShowUploadModal(true)}
+                      className="px-4 py-2.5 bg-gradient-to-r from-[#E67E22] to-[#D35400] text-white font-bold text-xs rounded-xl shadow-md hover:shadow-orange-200 transition-all flex items-center gap-2"
+                    >
+                      <Camera className="w-4 h-4" />
+                      <span>Upload Photo</span>
+                    </button>
                   </div>
                 </div>
 
-                <button
-                  onClick={requestNotificationPermission}
-                  className="px-2.5 py-1 bg-amber-50 text-[#D35400] rounded-lg text-[10px] font-bold border border-amber-200 flex items-center gap-1"
-                >
-                  <Bell className="w-3 h-3" />
-                  <span>{notificationsEnabled ? 'Push Active' : 'Enable Mobile Push'}</span>
-                </button>
-              </div>
-
-              <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-[#FAF6F0]/50">
-                {messages.map((msg) => {
-                  const isUser = msg.sender === 'user';
-                  return (
+                {/* Photo Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+                  {currentPhotos.map((photo) => (
                     <div
-                      key={msg.id}
-                      className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}
+                      key={photo.id}
+                      onClick={() => setActiveLightbox(photo)}
+                      className="group relative aspect-square rounded-2xl overflow-hidden bg-[#F8F1E9] border border-[#F5E6D3] cursor-pointer shadow-sm hover:shadow-md transition-all"
                     >
-                      <div
-                        className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-xs font-medium shadow-sm ${
-                          isUser
-                            ? 'bg-gradient-to-r from-[#E67E22] to-[#D35400] text-white rounded-tr-none'
-                            : 'bg-white text-[#2C2421] border border-[#F0E4D8] rounded-tl-none'
+                      <img
+                        src={photo.url}
+                        alt={photo.caption}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-4 flex flex-col justify-end text-white">
+                        <p className="font-bold text-xs">{photo.caption}</p>
+                        <p className="text-[10px] text-amber-200">{photo.date} • {photo.category}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Pagination Controls */}
+                <div className="pt-4 border-t border-[#F5E6D3] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#8C7A6B]">
+                  <p className="font-medium">
+                    Showing <span className="font-bold text-[#2C2421]">{gallery.length > 0 ? startIndex + 1 : 0}</span> to{' '}
+                    <span className="font-bold text-[#2C2421]">{Math.min(startIndex + photosPerPage, gallery.length)}</span> of{' '}
+                    <span className="font-bold text-[#2C2421]">{gallery.length}</span> photos
+                  </p>
+
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => {
+                        setGalleryPage(prev => Math.max(1, prev - 1));
+                        playSound('pop');
+                      }}
+                      disabled={safePage === 1}
+                      className="p-2 rounded-xl border border-[#E8D8C8] bg-[#FFFDF9] text-[#2C2421] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#F8F1E9] transition-all"
+                      title="Previous Page"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <button
+                        key={page}
+                        onClick={() => {
+                          setGalleryPage(page);
+                          playSound('pop');
+                        }}
+                        className={`w-8 h-8 rounded-xl font-bold transition-all text-xs flex items-center justify-center ${
+                          safePage === page
+                            ? 'bg-[#E67E22] text-white shadow-xs'
+                            : 'bg-[#FFFDF9] border border-[#E8D8C8] text-[#2C2421] hover:bg-[#F8F1E9]'
                         }`}
                       >
-                        <p>{msg.text}</p>
-                      </div>
-                      <span className="text-[9px] text-[#A08A7E] mt-1 px-1">{msg.time}</span>
-                    </div>
-                  );
-                })}
-                <div ref={chatBottomRef} />
+                        {page}
+                      </button>
+                    ))}
+
+                    <button
+                      onClick={() => {
+                        setGalleryPage(prev => Math.min(totalPages, prev + 1));
+                        playSound('pop');
+                      }}
+                      disabled={safePage === totalPages}
+                      className="p-2 rounded-xl border border-[#E8D8C8] bg-[#FFFDF9] text-[#2C2421] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#F8F1E9] transition-all"
+                      title="Next Page"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
               </div>
 
-              <form onSubmit={handleSendMessage} className="p-3 bg-white border-t border-[#F0E4D8] flex gap-2">
-                <input
-                  type="text"
-                  value={newMessageText}
-                  onChange={(e) => setNewMessageText(e.target.value)}
-                  placeholder="Type a message to your partner..."
-                  className="flex-1 px-4 py-2.5 bg-[#FFFDF9] border border-[#E8D8C8] rounded-xl text-xs focus:ring-2 focus:ring-[#E67E22] outline-none"
-                />
+              {activeLightbox && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+                  <div className="relative max-w-2xl w-full bg-white rounded-3xl overflow-hidden shadow-2xl">
+                    <button
+                      onClick={() => setActiveLightbox(null)}
+                      className="absolute top-4 right-4 z-10 p-2 bg-black/50 text-white rounded-full hover:bg-black"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                    <img src={activeLightbox.url} alt={activeLightbox.caption} className="w-full max-h-[60vh] object-contain bg-black" />
+                    <div className="p-6 bg-white">
+                      <h3 className="font-bold text-lg text-[#2C2421]">{activeLightbox.caption}</h3>
+                      <p className="text-xs text-[#8C7A6B]">Saved on {activeLightbox.date}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {showUploadModal && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                  <div className="bg-white rounded-3xl p-6 max-w-md w-full space-y-4 shadow-2xl">
+                    <div className="flex justify-between items-center border-b border-[#F5E6D3] pb-3">
+                      <h3 className="font-bold text-base text-[#2C2421]">Upload New Moment</h3>
+                      <button onClick={() => setShowUploadModal(false)}>
+                        <X className="w-5 h-5 text-[#8C7A6B]" />
+                      </button>
+                    </div>
+
+                    <form onSubmit={handleAddGalleryPhoto} className="space-y-4">
+                      <div>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageFileChange}
+                          className="w-full text-xs text-[#8C7A6B]"
+                        />
+                      </div>
+                      {previewImage && (
+                        <div className="aspect-video rounded-xl overflow-hidden border border-[#F5E6D3]">
+                          <img src={previewImage} alt="Preview" className="w-full h-full object-cover" />
+                        </div>
+                      )}
+                      <div>
+                        <input
+                          type="text"
+                          required
+                          placeholder="Caption"
+                          value={newImageCaption}
+                          onChange={e => setNewImageCaption(e.target.value)}
+                          className="w-full px-3 py-2 bg-[#FFFDF9] border border-[#E0D0C0] rounded-xl text-xs"
+                        />
+                      </div>
+                      <button
+                        type="submit"
+                        className="w-full py-3 bg-gradient-to-r from-[#E67E22] to-[#D35400] text-white font-bold rounded-xl text-xs shadow-md"
+                      >
+                        Save Memory
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* Gala Funds Tab (Google Sheets Integration) */}
+        {activeTab === 'gala' && (
+          <div className="space-y-6 max-w-xl mx-auto">
+            <div className="bg-white rounded-3xl p-6 shadow-md border border-[#F0E4D8]">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full text-xs font-bold mb-2">
+                    <Wallet className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Google Sheets Live Tracker</span>
+                  </div>
+                  <h2 className="text-2xl font-black text-[#2C2421]">Our Gala Funds 💰</h2>
+                  <p className="text-xs text-[#8C7A6B]">
+                    Synced directly with your Google Sheet cell!
+                  </p>
+                </div>
+
                 <button
-                  type="submit"
-                  className="p-3 bg-[#D35400] text-white rounded-xl hover:bg-[#B94A00] transition-all shadow-md"
+                  onClick={() => setShowSheetSettings(!showSheetSettings)}
+                  className="p-2.5 bg-[#FAF6F0] border border-[#E8D8C8] text-[#5D4037] hover:bg-[#F3E8DB] rounded-2xl transition-all"
+                  title="Configure Google Sheet link"
                 >
-                  <Send className="w-4 h-4" />
+                  <Settings className="w-5 h-5" />
                 </button>
-              </form>
+              </div>
+
+              {/* Balance Hero Card */}
+              <div className="bg-gradient-to-br from-[#1E3A8A] via-[#2563EB] to-[#0D9488] rounded-3xl p-6 text-white shadow-xl relative overflow-hidden mb-6">
+                <div className="absolute -right-6 -bottom-6 opacity-15 pointer-events-none">
+                  <Wallet className="w-48 h-48 text-white" />
+                </div>
+
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-emerald-200 flex items-center gap-1.5">
+                      <TrendingUp className="w-4 h-4" />
+                      Gala Trip Savings
+                    </span>
+                    {lastSyncedTime && (
+                      <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full font-medium">
+                        Synced {lastSyncedTime}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="my-4">
+                    <span className="text-xs text-blue-100 block font-medium mb-1">Total Savings Balance</span>
+                    <div className="text-4xl sm:text-5xl font-black tracking-tight flex items-baseline gap-1">
+                      <span>{currencySymbol}</span>
+                      <span>{galaFundAmount.toLocaleString()}</span>
+                    </div>
+                  </div>
+
+                  {/* Goal Progress */}
+                  <div className="mt-6 pt-4 border-t border-white/20">
+                    <div className="flex justify-between items-center text-xs font-bold mb-1.5">
+                      <span className="text-blue-100">Target Goal: {currencySymbol}{galaGoal.toLocaleString()}</span>
+                      <span className="text-emerald-300 font-extrabold">
+                        {Math.min(100, Math.round((galaFundAmount / galaGoal) * 100))}% Reached
+                      </span>
+                    </div>
+                    <div className="w-full h-3 bg-black/20 rounded-full overflow-hidden p-0.5 backdrop-blur-xs">
+                      <div
+                        className="h-full bg-gradient-to-r from-emerald-300 to-amber-300 rounded-full transition-all duration-700"
+                        style={{ width: `${Math.min(100, (galaFundAmount / galaGoal) * 100)}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Sync Controls */}
+              <div className="flex gap-2 mb-6">
+                <button
+                  onClick={fetchGalaFunds}
+                  disabled={isSyncingSheet || !sheetId.trim()}
+                  className="flex-1 py-3 bg-[#E67E22] hover:bg-[#D35400] text-white font-bold text-xs rounded-2xl shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-4 h-4 ${isSyncingSheet ? 'animate-spin' : ''}`} />
+                  <span>{isSyncingSheet ? 'Syncing Cell...' : 'Fetch Latest Balance'}</span>
+                </button>
+              </div>
+
+              {sheetError && (
+                <div className="p-3.5 bg-red-50 border border-red-200 text-red-700 text-xs rounded-2xl mb-6">
+                  <p className="font-bold mb-0.5">Sync Alert:</p>
+                  <p>{sheetError}</p>
+                </div>
+              )}
+
+              {/* Settings Form / Instructions Modal */}
+              {showSheetSettings && (
+                <div className="p-5 bg-[#FFFDF9] rounded-2xl border border-[#E8D8C8] space-y-4 shadow-sm mb-6">
+                  <div className="flex justify-between items-center border-b border-[#F5E6D3] pb-2">
+                    <h3 className="font-extrabold text-xs text-[#2C2421] uppercase tracking-wider flex items-center gap-1.5">
+                      <Settings className="w-4 h-4 text-[#E67E22]" />
+                      Google Sheets API Settings
+                    </h3>
+                    <button onClick={() => setShowSheetSettings(false)} className="text-[#8C7A6B] hover:text-[#2C2421]">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-[#5D4037] mb-1">
+                      Google Sheet URL or Sheet ID
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Paste link or Sheet ID (e.g. 1BxiMVs0XRA5nFMdKvBdB...)"
+                      value={sheetId}
+                      onChange={(e) => setSheetId(e.target.value)}
+                      className="w-full px-3 py-2 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22]"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[11px] font-bold text-[#5D4037] mb-1">
+                        Cell Range (e.g., A1 or Sheet1!B2)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="A1"
+                        value={cellRange}
+                        onChange={(e) => setCellRange(e.target.value)}
+                        className="w-full px-3 py-2 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-[#5D4037] mb-1">
+                        Currency Symbol
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="₱ or $"
+                        value={currencySymbol}
+                        onChange={(e) => setCurrencySymbol(e.target.value)}
+                        className="w-full px-3 py-2 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22]"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-[#5D4037] mb-1">
+                      Target Gala Goal Amount
+                    </label>
+                    <input
+                      type="number"
+                      value={galaGoal}
+                      onChange={(e) => setGalaGoal(Number(e.target.value))}
+                      className="w-full px-3 py-2 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-[#5D4037] mb-1">
+                      Google Sheets API Key (Optional)
+                    </label>
+                    <input
+                      type="password"
+                      placeholder="Optional Google API Key"
+                      value={apiKey}
+                      onChange={(e) => setApiKey(e.target.value)}
+                      className="w-full px-3 py-2 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22]"
+                    />
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      fetchGalaFunds();
+                      setShowSheetSettings(false);
+                    }}
+                    className="w-full py-2.5 bg-[#2C3E50] text-white font-bold text-xs rounded-xl hover:bg-[#1A252F] transition-all flex items-center justify-center gap-1.5"
+                  >
+                    <span>Save & Connect Sheet</span>
+                  </button>
+                </div>
+              )}
+
+              {/* Instructions on how to connect Google Sheet */}
+              <div className="p-4 bg-[#FFFDF9] rounded-2xl border border-[#F5E6D3] text-xs space-y-2">
+                <p className="font-extrabold text-[#D35400] flex items-center gap-1.5">
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  How to link your Google Sheet cell:
+                </p>
+                <ol className="list-decimal list-inside space-y-1 text-[#8C7A6B] leading-relaxed">
+                  <li>In Google Sheets, place your total Gala funds amount in cell <strong className="text-[#2C2421]">A1</strong> (or custom cell).</li>
+                  <li>Click <strong className="text-[#2C2421]">Share</strong> button at top right &rarr; set permission to <strong className="text-[#2C2421]">"Anyone with link can view"</strong>.</li>
+                  <li>Copy your Google Sheet URL and paste it into the ⚙️ Settings above!</li>
+                </ol>
+              </div>
             </div>
           </div>
         )}
@@ -1329,7 +1612,7 @@ export default function App() {
             { id: 'dates', label: 'Ideas', icon: Calendar },
             { id: 'plans', label: 'Agenda', icon: Compass },
             { id: 'gallery', label: 'Gallery', icon: ImageIcon },
-            { id: 'chat', label: 'Chat', icon: MessageSquare }
+            { id: 'gala', label: 'Gala Funds', icon: Wallet }
           ].map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
