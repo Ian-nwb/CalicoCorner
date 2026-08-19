@@ -6,13 +6,15 @@ import {
   TrendingUp, RefreshCw, ExternalLink, ChevronLeft, ChevronRight
 } from 'lucide-react';
 
-// Inject Tailwind CDN script cleanly with global readiness check
-if (typeof document !== 'undefined' && !document.getElementById('tailwind-cdn-script')) {
-  const script = document.createElement('script');
-  script.id = 'tailwind-cdn-script';
-  script.src = 'https://cdn.tailwindcss.com';
-  document.head.appendChild(script);
-}
+// // Inject Tailwind CDN script cleanly with global readiness check
+// if (typeof document !== 'undefined' && !document.getElementById('tailwind-cdn-script')) {
+//   const script = document.createElement('script');
+//   script.id = 'tailwind-cdn-script';
+//   script.src = 'https://cdn.tailwindcss.com';
+//   document.head.appendChild(script);
+// }
+
+import "./index.css"
 
 const playSound = (type) => {
   try {
@@ -110,13 +112,13 @@ const INITIAL_AGENDA = [
   { id: 'a2', title: 'Pottery Painting Workshop', date: '2026-02-28', time: '02:00 PM', location: 'Clay & Co Studio', notes: 'Reservation under Alex' }
 ];
 
-const INITIAL_TRISHA_TODOS = [
+const INITIAL_TORI_TODOS = [
   { id: 't1', text: 'Water bedroom plants & succulents', completed: false, category: 'Personal' },
   { id: 't2', text: 'Restock skincare favorites', completed: true, category: 'Shopping' },
   { id: 't3', text: 'Finish reading book chapter 5', completed: false, category: 'Personal' }
 ];
 
-const INITIAL_IAN_TODOS = [
+const INITIAL_MOTMOT_TODOS = [
   { id: 'i1', text: 'Clean coffee grinder & fresh beans', completed: true, category: 'Chore' },
   { id: 'i2', text: 'Gym workout / Leg day session', completed: false, category: 'Fitness' },
   { id: 'i3', text: 'Review project code updates', completed: false, category: 'Work' }
@@ -129,7 +131,7 @@ export default function App() {
   const [email, setEmail] = useState('meow@calicocorner.app');
   const [password, setPassword] = useState('calicocat123');
   const [showPassword, setShowPassword] = useState(false);
-  const partnerName = 'Trisha & Ian';
+  const partnerName = 'Tori & Motmot';
 
   // Chat State
   const [messages, setMessages] = useState(INITIAL_MESSAGES);
@@ -141,10 +143,10 @@ export default function App() {
   // App Navigation: Default explicitly set to 'kitten'
   const [activeTab, setActiveTab] = useState('kitten');
 
-  // Feature: To-Do Lists for Trisha & Ian
-  const [todoUserTab, setTodoUserTab] = useState('trisha'); // 'trisha' | 'ian'
-  const [trishaTodos, setTrishaTodos] = useState(INITIAL_TRISHA_TODOS);
-  const [ianTodos, setIanTodos] = useState(INITIAL_IAN_TODOS);
+  // Feature: To-Do Lists for Tori & Motmot
+  const [todoUserTab, setTodoUserTab] = useState('tori'); // 'tori' | 'motmot'
+  const [toriTodos, setToriTodos] = useState(INITIAL_TORI_TODOS);
+  const [motmotTodos, setMotmotTodos] = useState(INITIAL_MOTMOT_TODOS);
   const [newTodoText, setNewTodoText] = useState('');
   const [newTodoCategory, setNewTodoCategory] = useState('Personal');
 
@@ -447,29 +449,29 @@ export default function App() {
       completed: false,
       category: newTodoCategory
     };
-    if (todoUserTab === 'trisha') {
-      setTrishaTodos([newItem, ...trishaTodos]);
+    if (todoUserTab === 'tori') {
+      setToriTodos([newItem, ...toriTodos]);
     } else {
-      setIanTodos([newItem, ...ianTodos]);
+      setMotmotTodos([newItem, ...motmotTodos]);
     }
     setNewTodoText('');
     playSound('success');
   };
 
   const handleToggleTodo = (id, targetUser) => {
-    if (targetUser === 'trisha') {
-      setTrishaTodos(prev => prev.map(item => item.id === id ? { ...item, completed: !item.completed } : item));
+    if (targetUser === 'tori') {
+      setToriTodos(prev => prev.map(item => item.id === id ? { ...item, completed: !item.completed } : item));
     } else {
-      setIanTodos(prev => prev.map(item => item.id === id ? { ...item, completed: !item.completed } : item));
+      setMotmotTodos(prev => prev.map(item => item.id === id ? { ...item, completed: !item.completed } : item));
     }
     playSound('pop');
   };
 
   const handleDeleteTodo = (id, targetUser) => {
-    if (targetUser === 'trisha') {
-      setTrishaTodos(prev => prev.filter(item => item.id !== id));
+    if (targetUser === 'tori') {
+      setToriTodos(prev => prev.filter(item => item.id !== id));
     } else {
-      setIanTodos(prev => prev.filter(item => item.id !== id));
+      setMotmotTodos(prev => prev.filter(item => item.id !== id));
     }
     playSound('pop');
   };
@@ -602,7 +604,7 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-3 text-[#A08A7E] hover:text-[#5D4037]"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8C7A6B] hover:text-[#2C2421]"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -689,57 +691,57 @@ export default function App() {
                     <span>Personal Checklists</span>
                   </div>
                   <h2 className="text-2xl font-black text-[#2C2421]">
-                    {todoUserTab === 'trisha' ? "Trisha's Checklist 🌸" : "Ian's Checklist ⚡"}
+                    {todoUserTab === 'tori' ? "Tori's Checklist 💚" : "Motmot's Checklist 🩵"}
                   </h2>
                   <p className="text-xs text-[#8C7A6B]">
-                    {todoUserTab === 'trisha' 
-                      ? "Trisha's workspace for personal tasks, errands, and shopping!" 
-                      : "Ian's workspace for workouts, tech tasks, and personal goals!"}
+                    {todoUserTab === 'tori' 
+                      ? "Tori's workspace for personal tasks, errands, and shopping!" 
+                      : "Motmot's workspace for workouts, tech tasks, and personal goals!"}
                   </p>
                 </div>
 
                 <div className="flex bg-[#F8F1E9] p-1.5 rounded-2xl border border-[#E8D8C8] self-center sm:self-auto shadow-inner">
                   <button
-                    onClick={() => { setTodoUserTab('trisha'); playSound('pop'); }}
+                    onClick={() => { setTodoUserTab('tori'); playSound('pop'); }}
                     className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all flex items-center gap-1.5 ${
-                      todoUserTab === 'trisha'
-                        ? 'bg-gradient-to-r from-[#E67E22] to-[#D35400] text-white shadow-md scale-105'
+                      todoUserTab === 'tori'
+                        ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md scale-105'
                         : 'text-[#8C7A6B] hover:text-[#2C2421]'
                     }`}
                   >
-                    <span>🌸 Trisha's Page</span>
+                    <span>💚 Tori's Page</span>
                   </button>
                   <button
-                    onClick={() => { setTodoUserTab('ian'); playSound('pop'); }}
+                    onClick={() => { setTodoUserTab('motmot'); playSound('pop'); }}
                     className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all flex items-center gap-1.5 ${
-                      todoUserTab === 'ian'
-                        ? 'bg-gradient-to-r from-[#2C3E50] to-[#34495E] text-white shadow-md scale-105'
+                      todoUserTab === 'motmot'
+                        ? 'bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-md scale-105'
                         : 'text-[#8C7A6B] hover:text-[#2C2421]'
                     }`}
                   >
-                    <span>⚡ Ian's Page</span>
+                    <span>🩵 Motmot's Page</span>
                   </button>
                 </div>
               </div>
 
               {/* Progress Tracker Bar */}
               {(() => {
-                const currentList = todoUserTab === 'trisha' ? trishaTodos : ianTodos;
+                const currentList = todoUserTab === 'tori' ? toriTodos : motmotTodos;
                 const completedCount = currentList.filter(t => t.completed).length;
                 const totalCount = currentList.length;
                 const percent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
-                const isTrisha = todoUserTab === 'trisha';
+                const isTori = todoUserTab === 'tori';
 
                 return (
                   <div className={`p-4 rounded-2xl border mb-6 transition-all shadow-sm ${
-                    isTrisha 
-                      ? 'bg-gradient-to-r from-orange-50 to-amber-50/70 border-orange-200' 
-                      : 'bg-gradient-to-r from-slate-50 to-blue-50/70 border-slate-200'
+                    isTori 
+                      ? 'bg-gradient-to-r from-emerald-50 to-teal-50/70 border-emerald-200' 
+                      : 'bg-gradient-to-r from-sky-50 to-blue-50/70 border-sky-200'
                   }`}>
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-xs font-extrabold text-[#2C2421] flex items-center gap-1.5">
-                        <User className={`w-4 h-4 ${isTrisha ? 'text-[#D35400]' : 'text-[#2C3E50]'}`} />
-                        {isTrisha ? "Trisha's Progress" : "Ian's Progress"}
+                        <User className={`w-4 h-4 ${isTori ? 'text-emerald-600' : 'text-sky-600'}`} />
+                        {isTori ? "Tori's Progress" : "Motmot's Progress"}
                       </span>
                       <span className="text-xs font-bold text-[#8C7A6B]">
                         {completedCount} / {totalCount} Done ({percent}%)
@@ -748,9 +750,9 @@ export default function App() {
                     <div className="w-full h-3 bg-white/80 rounded-full overflow-hidden border border-black/5 shadow-inner">
                       <div
                         className={`h-full transition-all duration-500 rounded-full ${
-                          isTrisha 
-                            ? 'bg-gradient-to-r from-[#E67E22] to-[#D35400]' 
-                            : 'bg-gradient-to-r from-[#2C3E50] to-[#34495E]'
+                          isTori 
+                            ? 'bg-gradient-to-r from-emerald-500 to-teal-600' 
+                            : 'bg-gradient-to-r from-sky-500 to-blue-600'
                         }`}
                         style={{ width: `${percent}%` }}
                       ></div>
@@ -762,13 +764,13 @@ export default function App() {
               {/* Add New Task Form */}
               <form onSubmit={handleAddTodoItem} className="p-4 bg-[#FFFDF9] rounded-2xl border border-[#F5E6D3] mb-6 space-y-3 shadow-xs">
                 <p className="text-xs font-bold text-[#5D4037] uppercase tracking-wider">
-                  Add task to {todoUserTab === 'trisha' ? "Trisha's Checklist 🌸" : "Ian's Checklist ⚡"}
+                  Add task to {todoUserTab === 'tori' ? "Tori's Checklist 💚" : "Motmot's Checklist 🩵"}
                 </p>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <input
                     type="text"
                     required
-                    placeholder={todoUserTab === 'trisha' ? "e.g., Water succulents, skincare restock..." : "e.g., Clean coffee grinder, leg day workout..."}
+                    placeholder={todoUserTab === 'tori' ? "e.g., Water succulents, skincare restock..." : "e.g., Clean coffee grinder, leg day workout..."}
                     value={newTodoText}
                     onChange={e => setNewTodoText(e.target.value)}
                     className="flex-1 px-3.5 py-2.5 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22] transition-colors"
@@ -787,9 +789,9 @@ export default function App() {
                   <button
                     type="submit"
                     className={`px-4 py-2.5 text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1 shadow-sm ${
-                      todoUserTab === 'trisha'
-                        ? 'bg-[#D35400] hover:bg-[#B94A00]'
-                        : 'bg-[#2C3E50] hover:bg-[#1A252F]'
+                      todoUserTab === 'tori'
+                        ? 'bg-emerald-600 hover:bg-emerald-700'
+                        : 'bg-sky-600 hover:bg-sky-700'
                     }`}
                   >
                     <Plus className="w-4 h-4" />
@@ -801,11 +803,11 @@ export default function App() {
               {/* Tasks List */}
               <div className="space-y-2.5">
                 {(() => {
-                  const list = todoUserTab === 'trisha' ? trishaTodos : ianTodos;
+                  const list = todoUserTab === 'tori' ? toriTodos : motmotTodos;
                   if (list.length === 0) {
                     return (
                       <p className="text-xs text-center text-[#8C7A6B] py-8 bg-[#FAF6F0] rounded-2xl border border-dashed border-[#E8D8C8]">
-                        No tasks yet on {todoUserTab === 'trisha' ? "Trisha's" : "Ian's"} list! Add one above ✨
+                        No tasks yet on {todoUserTab === 'tori' ? "Tori's" : "Motmot's"} list! Add one above ✨
                       </p>
                     );
                   }
