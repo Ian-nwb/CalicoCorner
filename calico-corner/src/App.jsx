@@ -3,7 +3,8 @@ import {
   Cat, Sparkles, Eye, EyeOff, BellRing, Bell, LogOut, CheckSquare,
   User, Plus, CheckCircle, Circle, Trash2, Heart, RotateCw, Coins,
   Calendar, Compass, Image as ImageIcon, Camera, X, Wallet, Settings,
-  TrendingUp, RefreshCw, ExternalLink, ChevronLeft, ChevronRight
+  TrendingUp, RefreshCw, ExternalLink, ChevronLeft, ChevronRight,
+  Shuffle, Menu
 } from 'lucide-react';
 import { supabase } from './utils/supabase';
 import "./index.css"
@@ -72,8 +73,9 @@ export default function App() {
   // Tailwind CSS loaded listener state to prevent unstyled flash
   const [, setTailwindReady] = useState(typeof window !== 'undefined' && !!window.tailwind);
 
-  // App Navigation: Default explicitly set to 'kitten'
+  // App Navigation & Speed Dial state
   const [activeTab, setActiveTab] = useState('kitten');
+  const [isNavOpen, setIsNavOpen] = useState(false);
 
   // Feature: To-Do Lists for Tori & Motmot
   const [todoUserTab, setTodoUserTab] = useState('tori'); // 'tori' | 'motmot'
@@ -101,6 +103,10 @@ export default function App() {
   const [newIdeaTitle, setNewIdeaTitle] = useState('');
   const [newIdeaCategory, setNewIdeaCategory] = useState('outdoor');
   const [newIdeaLocation, setNewIdeaLocation] = useState('');
+  const [deletingDateIds, setDeletingDateIds] = useState([]);
+  const [showPickerModal, setShowPickerModal] = useState(false);
+  const [pickedIdea, setPickedIdea] = useState(null);
+  const [isPickingRandom, setIsPickingRandom] = useState(false);
 
   // Feature: Plans / Date Agenda State
   const [agenda, setAgenda] = useState([]);
@@ -395,6 +401,47 @@ export default function App() {
     }
   };
 
+  const handleDeleteDateIdea = async (id) => {
+    setDeletingDateIds(prev => [...prev, id]);
+    playSound('pop');
+
+    setTimeout(async () => {
+      const { error } = await supabase.from('date_ideas').delete().eq('id', id);
+      if (!error) {
+        setDateIdeas(prev => prev.filter(d => d.id !== id));
+      }
+      setDeletingDateIds(prev => prev.filter(i => i !== id));
+    }, 300);
+  };
+
+  const handlePickRandomIdea = () => {
+    const uncompleted = dateIdeas.filter(d => !d.completed);
+    if (uncompleted.length === 0) {
+      setPickedIdea(null);
+      setShowPickerModal(true);
+      playSound('pop');
+      return;
+    }
+
+    setIsPickingRandom(true);
+    setShowPickerModal(true);
+    playSound('coin');
+
+    let count = 0;
+    const interval = setInterval(() => {
+      const randomTemp = uncompleted[Math.floor(Math.random() * uncompleted.length)];
+      setPickedIdea(randomTemp);
+      count++;
+      if (count > 6) {
+        clearInterval(interval);
+        const finalPick = uncompleted[Math.floor(Math.random() * uncompleted.length)];
+        setPickedIdea(finalPick);
+        setIsPickingRandom(false);
+        playSound('success');
+      }
+    }, 90);
+  };
+
   const handleAddDateIdea = async (e) => {
     e.preventDefault();
     if (!newIdeaTitle.trim()) return;
@@ -599,7 +646,8 @@ export default function App() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 bg-[#FFFDF9] border border-[#E8D8C8] rounded-xl focus:ring-2 focus:ring-[#E67E22] focus:outline-none text-[#2C2421] text-sm"
+                placeholder="Enter your email address (e.g. tori@calico.app)..."
+                className="w-full px-4 py-3 bg-[#FFFDF9] border border-[#E8D8C8] rounded-xl focus:ring-2 focus:ring-[#E67E22] focus:outline-none text-[#2C2421] text-sm placeholder:text-[#8C7A6B]/70"
               />
             </div>
 
@@ -613,7 +661,8 @@ export default function App() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 bg-[#FFFDF9] border border-[#E8D8C8] rounded-xl focus:ring-2 focus:ring-[#E67E22] focus:outline-none text-[#2C2421] text-sm pr-10"
+                  placeholder="Enter your account password..."
+                  className="w-full px-4 py-3 bg-[#FFFDF9] border border-[#E8D8C8] rounded-xl focus:ring-2 focus:ring-[#E67E22] focus:outline-none text-[#2C2421] text-sm pr-10 placeholder:text-[#8C7A6B]/70"
                 />
                 <button
                   type="button"
@@ -639,7 +688,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAF6F0] text-[#2C2421] font-sans flex flex-col pb-24 md:pb-6">
+    <div className="min-h-screen bg-[#FAF6F0] text-[#2C2421] font-sans flex flex-col pb-20">
       <style>{`
         :root, body, #root {
           background-color: #FAF6F0 !important;
@@ -786,12 +835,13 @@ export default function App() {
                     required
                     value={newTodoText}
                     onChange={e => setNewTodoText(e.target.value)}
-                    className="flex-1 px-3.5 py-2.5 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22] transition-colors"
+                    placeholder={todoUserTab === 'tori' ? "Add task for Tori (e.g. Buy groceries, Study)..." : "Add task for Motmot (e.g. Workout, Coding)..."}
+                    className="flex-1 px-3.5 py-2.5 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22] transition-colors placeholder:text-[#8C7A6B]/70"
                   />
                   <select
                     value={newTodoCategory}
                     onChange={e => setNewTodoCategory(e.target.value)}
-                    className="px-3.5 py-2.5 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22]"
+                    className="px-3.5 py-2.5 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22] text-[#2C2421]"
                   >
                     <option value="Personal">Personal</option>
                     <option value="Chore">Chore</option>
@@ -1008,13 +1058,24 @@ export default function App() {
         {activeTab === 'dates' && (
           <div className="space-y-6">
             <div className="bg-white rounded-3xl p-6 shadow-md border border-[#F0E4D8]">
-              <div className="mb-6">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-[#D35400] rounded-full text-xs font-bold mb-2">
-                  <Calendar className="w-3.5 h-3.5" />
-                  <span>Bucket List</span>
+              <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-[#D35400] rounded-full text-xs font-bold mb-2">
+                    <Calendar className="w-3.5 h-3.5" />
+                    <span>Bucket List</span>
+                  </div>
+                  <h2 className="text-2xl font-black text-[#2C2421]">Date Ideas Checklist 📅</h2>
+                  <p className="text-xs text-[#8C7A6B]">Plan, categorize, and check off activities together!</p>
                 </div>
-                <h2 className="text-2xl font-black text-[#2C2421]">Date Ideas Checklist 📅</h2>
-                <p className="text-xs text-[#8C7A6B]">Plan, categorize, and check off activities together!</p>
+
+                <button
+                  type="button"
+                  onClick={handlePickRandomIdea}
+                  className="px-4 py-2.5 bg-gradient-to-r from-[#E67E22] via-[#F39C12] to-[#D35400] text-white font-extrabold text-xs rounded-2xl shadow-md hover:shadow-orange-200 hover:scale-105 transition-all flex items-center justify-center gap-2 border border-white/20 self-start sm:self-auto"
+                >
+                  <Shuffle className={`w-4 h-4 ${isPickingRandom ? 'animate-spin-shuffle' : ''}`} />
+                  <span>Pick a Date Idea 🎲</span>
+                </button>
               </div>
 
               <div className="bg-[#FAF6F0] p-3 rounded-2xl border border-[#F5E6D3] mb-6">
@@ -1058,12 +1119,13 @@ export default function App() {
                     required
                     value={newIdeaTitle}
                     onChange={e => setNewIdeaTitle(e.target.value)}
-                    className="sm:col-span-2 px-3 py-2 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22]"
+                    placeholder="Date idea (e.g. Sunset Picnic, Stargazing)..."
+                    className="sm:col-span-2 px-3 py-2 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22] placeholder:text-[#8C7A6B]/70"
                   />
                   <select
                     value={newIdeaCategory}
                     onChange={e => setNewIdeaCategory(e.target.value)}
-                    className="px-3 py-2 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22]"
+                    className="px-3 py-2 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22] text-[#2C2421]"
                   >
                     <option value="outdoor">Outdoor 🌲</option>
                     <option value="sport">Sport ⚽</option>
@@ -1076,7 +1138,8 @@ export default function App() {
                     type="text"
                     value={newIdeaLocation}
                     onChange={e => setNewIdeaLocation(e.target.value)}
-                    className="flex-1 px-3 py-2 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22]"
+                    placeholder="Location (optional, e.g. Seaside Park)..."
+                    className="flex-1 px-3 py-2 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22] placeholder:text-[#8C7A6B]/70"
                   />
                   <button
                     type="submit"
@@ -1096,36 +1159,129 @@ export default function App() {
                 )}
                 {dateIdeas
                   .filter(d => selectedCategory === 'all' || d.category === selectedCategory)
-                  .map((item) => (
-                    <div
-                      key={item.id}
-                      onClick={() => handleToggleDate(item.id)}
-                      className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
-                        item.completed
-                          ? 'bg-amber-50/50 border-amber-200 opacity-75'
-                          : 'bg-[#FFFDF9] border-[#F5E6D3] hover:border-[#E67E22]'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        {item.completed ? (
-                          <CheckCircle className="w-5 h-5 text-[#D35400] shrink-0" />
-                        ) : (
-                          <Circle className="w-5 h-5 text-[#C8B8A8] shrink-0" />
-                        )}
-                        <div>
-                          <p className={`text-sm font-bold ${item.completed ? 'line-through text-[#8C7A6B]' : 'text-[#2C2421]'}`}>
-                            {item.title}
-                          </p>
-                          <p className="text-[10px] text-[#8C7A6B]">
-                            📍 {item.location} • <span className="capitalize">{item.category}</span>
-                          </p>
+                  .map((item) => {
+                    const isDeleting = deletingDateIds.includes(item.id);
+                    return (
+                      <div
+                        key={item.id}
+                        className={`p-3.5 rounded-2xl border transition-all duration-300 flex items-center justify-between ${
+                          isDeleting ? 'opacity-0 scale-95 -translate-x-4 max-h-0 py-0 my-0 overflow-hidden border-none' : 'opacity-100 scale-100'
+                        } ${
+                          item.completed
+                            ? 'bg-amber-50/50 border-amber-200 opacity-75'
+                            : 'bg-[#FFFDF9] border-[#F5E6D3] hover:border-[#E67E22]'
+                        }`}
+                      >
+                        <div
+                          onClick={() => handleToggleDate(item.id)}
+                          className="flex items-center gap-3 cursor-pointer flex-1 mr-2"
+                        >
+                          {item.completed ? (
+                            <CheckCircle className="w-5 h-5 text-[#D35400] shrink-0" />
+                          ) : (
+                            <Circle className="w-5 h-5 text-[#C8B8A8] shrink-0 hover:text-[#E67E22]" />
+                          )}
+                          <div>
+                            <p className={`text-sm font-bold ${item.completed ? 'line-through text-[#8C7A6B]' : 'text-[#2C2421]'}`}>
+                              {item.title}
+                            </p>
+                            <p className="text-[10px] text-[#8C7A6B]">
+                              📍 {item.location} • <span className="capitalize">{item.category}</span>
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs px-2.5 py-1 bg-white rounded-lg border border-[#E8D8C8] text-[#8C7A6B] capitalize font-medium hidden sm:inline-block">
+                            {item.category}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteDateIdea(item.id);
+                            }}
+                            className="p-1.5 text-[#8C7A6B] hover:text-red-500 hover:bg-red-50 rounded-xl transition-all opacity-80 hover:opacity-100"
+                            title="Delete date idea"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
                       </div>
-                      <span className="text-xs px-2.5 py-1 bg-white rounded-lg border border-[#E8D8C8] text-[#8C7A6B] capitalize font-medium">
-                        {item.category}
-                      </span>
-                    </div>
-                  ))}
+                    );
+                  })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Random Date Picker Modal */}
+        {showPickerModal && (
+          <div className="fixed inset-0 bg-[#2C2421]/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-[#F0E4D8] relative animate-modal-pop text-center space-y-4">
+              <button
+                onClick={() => setShowPickerModal(false)}
+                className="absolute top-4 right-4 p-1.5 text-[#8C7A6B] hover:text-[#2C2421] hover:bg-[#FAF6F0] rounded-full transition-all"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="w-16 h-16 bg-gradient-to-tr from-[#E67E22] to-[#F39C12] rounded-2xl mx-auto flex items-center justify-center shadow-lg text-white transform rotate-3">
+                <Sparkles className="w-8 h-8 animate-pulse" />
+              </div>
+
+              <div>
+                <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#D35400] bg-amber-50 px-3 py-1 rounded-full border border-amber-200">
+                  Calico Date Generator 🎲
+                </span>
+                <h3 className="text-xl font-black text-[#2C2421] mt-3">
+                  {isPickingRandom ? 'Selecting your next adventure...' : pickedIdea ? "Here's your next date! 💕" : "No Uncompleted Dates!"}
+                </h3>
+              </div>
+
+              {isPickingRandom || pickedIdea ? (
+                <div className={`p-5 rounded-2xl border transition-all ${
+                  isPickingRandom ? 'bg-[#FAF6F0] border-[#E8D8C8] animate-pulse' : 'bg-gradient-to-br from-[#FFFDF9] to-[#FFF8F0] border-[#E67E22] shadow-sm'
+                }`}>
+                  <h4 className="text-lg font-black text-[#2C2421] mb-1">
+                    {pickedIdea?.title}
+                  </h4>
+                  <p className="text-xs text-[#8C7A6B] flex items-center justify-center gap-2">
+                    <span>📍 {pickedIdea?.location || 'To be planned'}</span>
+                    <span>•</span>
+                    <span className="capitalize font-bold text-[#E67E22]">{pickedIdea?.category}</span>
+                  </p>
+                </div>
+              ) : (
+                <p className="text-xs text-[#8C7A6B] py-3">
+                  You've completed all date ideas on your checklist! Add some new date ideas above to pick again! ✨
+                </p>
+              )}
+
+              <div className="flex gap-2 pt-2">
+                {pickedIdea && !isPickingRandom && (
+                  <button
+                    onClick={() => {
+                      handleToggleDate(pickedIdea.id);
+                      setShowPickerModal(false);
+                    }}
+                    className="flex-1 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold text-xs rounded-xl shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-1.5"
+                  >
+                    <CheckCircle className="w-4 h-4" />
+                    <span>Mark as Planned!</span>
+                  </button>
+                )}
+
+                {dateIdeas.some(d => !d.completed) && (
+                  <button
+                    onClick={handlePickRandomIdea}
+                    disabled={isPickingRandom}
+                    className="flex-1 py-3 bg-gradient-to-r from-[#E67E22] to-[#D35400] text-white font-bold text-xs rounded-xl shadow-md hover:shadow-orange-200 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
+                  >
+                    <Shuffle className={`w-4 h-4 ${isPickingRandom ? 'animate-spin' : ''}`} />
+                    <span>{isPickingRandom ? 'Spinning...' : 'Spin Again 🎲'}</span>
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -1152,7 +1308,8 @@ export default function App() {
                     required
                     value={planTitle}
                     onChange={e => setPlanTitle(e.target.value)}
-                    className="w-full px-3 py-2 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22]"
+                    placeholder="Plan title (e.g. Anniversary Dinner, Weekend Trip)..."
+                    className="w-full px-3 py-2 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22] placeholder:text-[#8C7A6B]/70"
                   />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -1163,7 +1320,8 @@ export default function App() {
                       required
                       value={planDate}
                       onChange={e => setPlanDate(e.target.value)}
-                      className="w-full px-3 py-2 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22]"
+                      placeholder="Select event date"
+                      className="w-full px-3 py-2 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22] placeholder:text-[#8C7A6B]/70"
                     />
                   </div>
                   <div>
@@ -1172,7 +1330,8 @@ export default function App() {
                       type="time"
                       value={planTime}
                       onChange={e => setPlanTime(e.target.value)}
-                      className="w-full px-3 py-2 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22]"
+                      placeholder="Select event time"
+                      className="w-full px-3 py-2 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22] placeholder:text-[#8C7A6B]/70"
                     />
                   </div>
                 </div>
@@ -1181,13 +1340,15 @@ export default function App() {
                     type="text"
                     value={planLocation}
                     onChange={e => setPlanLocation(e.target.value)}
-                    className="px-3 py-2 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22]"
+                    placeholder="Location / Spot (e.g. Italian Bistro)..."
+                    className="px-3 py-2 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22] placeholder:text-[#8C7A6B]/70"
                   />
                   <input
                     type="text"
                     value={planNotes}
                     onChange={e => setPlanNotes(e.target.value)}
-                    className="px-3 py-2 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22]"
+                    placeholder="Notes / Reminders (e.g. Wear semi-formal attire)..."
+                    className="px-3 py-2 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22] placeholder:text-[#8C7A6B]/70"
                   />
                 </div>
                 <button
@@ -1416,7 +1577,8 @@ export default function App() {
                           required
                           value={newImageCaption}
                           onChange={e => setNewImageCaption(e.target.value)}
-                          className="w-full px-3 py-2 bg-[#FFFDF9] border border-[#E0D0C0] rounded-xl text-xs"
+                          placeholder="Caption for this photo memory..."
+                          className="w-full px-3 py-2 bg-[#FFFDF9] border border-[#E0D0C0] rounded-xl text-xs placeholder:text-[#8C7A6B]/70"
                         />
                       </div>
                       <button
@@ -1543,7 +1705,8 @@ export default function App() {
                       type="text"
                       value={sheetId}
                       onChange={(e) => setSheetId(e.target.value)}
-                      className="w-full px-3 py-2 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22]"
+                      placeholder="Paste Google Sheet URL or Sheet ID..."
+                      className="w-full px-3 py-2 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22] placeholder:text-[#8C7A6B]/70"
                     />
                   </div>
 
@@ -1556,7 +1719,8 @@ export default function App() {
                         type="text"
                         value={cellRange}
                         onChange={(e) => setCellRange(e.target.value)}
-                        className="w-full px-3 py-2 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22]"
+                        placeholder="Cell range (e.g. A1 or Sheet1!B2)..."
+                        className="w-full px-3 py-2 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22] placeholder:text-[#8C7A6B]/70"
                       />
                     </div>
                     <div>
@@ -1567,7 +1731,8 @@ export default function App() {
                         type="text"
                         value={currencySymbol}
                         onChange={(e) => setCurrencySymbol(e.target.value)}
-                        className="w-full px-3 py-2 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22]"
+                        placeholder="Currency symbol (e.g. ₱ or $)..."
+                        className="w-full px-3 py-2 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22] placeholder:text-[#8C7A6B]/70"
                       />
                     </div>
                   </div>
@@ -1580,7 +1745,8 @@ export default function App() {
                       type="number"
                       value={galaGoal}
                       onChange={(e) => setGalaGoal(Number(e.target.value))}
-                      className="w-full px-3 py-2 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22]"
+                      placeholder="Target savings goal (e.g. 50000)..."
+                      className="w-full px-3 py-2 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22] placeholder:text-[#8C7A6B]/70"
                     />
                   </div>
 
@@ -1592,7 +1758,8 @@ export default function App() {
                       type="password"
                       value={apiKey}
                       onChange={(e) => setApiKey(e.target.value)}
-                      className="w-full px-3 py-2 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22]"
+                      placeholder="Google Sheets API Key (Optional)..."
+                      className="w-full px-3 py-2 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22] placeholder:text-[#8C7A6B]/70"
                     />
                   </div>
 
@@ -1626,40 +1793,77 @@ export default function App() {
 
       </main>
 
-      {/* Bottom Navigation Bar */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-[#F0E4D8] z-40 py-2 px-3 shadow-lg">
-        <div className="max-w-md mx-auto flex items-center justify-between">
-          {[
-            { id: 'kitten', label: 'Kitten', icon: Cat },
-            { id: 'coin', label: 'Toss Coin', icon: Coins },
-            { id: 'todo', label: 'To-Do', icon: CheckSquare },
-            { id: 'dates', label: 'Ideas', icon: Calendar },
-            { id: 'plans', label: 'Agenda', icon: Compass },
-            { id: 'gallery', label: 'Gallery', icon: ImageIcon },
-            { id: 'gala', label: 'Gala Funds', icon: Wallet }
-          ].map((item) => {
-            const Icon = item.icon;
-            const isActive = activeTab === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => {
-                  setActiveTab(item.id);
-                  playSound('pop');
-                }}
-                className={`flex flex-col items-center py-1 px-1.5 rounded-xl transition-all ${
-                  isActive
-                    ? 'text-[#D35400] font-bold scale-105'
-                    : 'text-[#8C7A6B] hover:text-[#2C2421]'
-                }`}
-              >
-                <Icon className={`w-5 h-5 ${isActive ? 'stroke-[2.5px]' : 'stroke-2'}`} />
-                <span className="text-[10px] mt-0.5">{item.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      </nav>
+      {/* Floating Speed Dial Navigation (FAB) */}
+      {/* Dim Backdrop Overlay */}
+      {isNavOpen && (
+        <div
+          onClick={() => setIsNavOpen(false)}
+          className="fixed inset-0 bg-[#2C2421]/35 backdrop-blur-xs z-40 transition-opacity duration-300"
+        />
+      )}
+
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
+        {/* Expanded Speed Dial Menu Stack */}
+        {isNavOpen && (
+          <div className="flex flex-col items-end gap-2.5 mb-2 animate-fab-pop">
+            {[
+              { id: 'kitten', label: 'Daily Kitten', icon: Cat },
+              { id: 'coin', label: 'Toss Coin', icon: Coins },
+              { id: 'todo', label: 'Checklists', icon: CheckSquare },
+              { id: 'dates', label: 'Date Ideas', icon: Calendar },
+              { id: 'plans', label: 'Date Agenda', icon: Compass },
+              { id: 'gallery', label: 'Photo Gallery', icon: ImageIcon },
+              { id: 'gala', label: 'Gala Funds', icon: Wallet }
+            ].map((item, idx) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    setActiveTab(item.id);
+                    setIsNavOpen(false);
+                    playSound('pop');
+                  }}
+                  className={`flex items-center gap-3 px-4 py-2.5 rounded-2xl shadow-lg border transition-all duration-200 active:scale-95 ${
+                    isActive
+                      ? 'bg-gradient-to-r from-[#E67E22] to-[#D35400] text-white border-transparent scale-105 shadow-orange-200'
+                      : 'bg-white text-[#2C2421] border-[#F0E4D8] hover:bg-[#FFFDF9] hover:border-[#E67E22]'
+                  }`}
+                  style={{ animationDelay: `${idx * 40}ms` }}
+                >
+                  <span className={`text-xs font-extrabold ${isActive ? 'text-white' : 'text-[#2C2421]'}`}>
+                    {item.label}
+                  </span>
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
+                    isActive ? 'bg-white/20 text-white' : 'bg-[#FAF6F0] text-[#E67E22]'
+                  }`}>
+                    <Icon className="w-4 h-4" />
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Main FAB Toggle Button */}
+        <button
+          onClick={() => {
+            setIsNavOpen(!isNavOpen);
+            playSound('pop');
+          }}
+          className={`w-14 h-14 rounded-full bg-gradient-to-tr from-[#E67E22] via-[#F39C12] to-[#D35400] text-white shadow-xl hover:shadow-orange-300 flex items-center justify-center transition-all duration-300 border-2 border-white transform active:scale-95 ${
+            isNavOpen ? 'rotate-90 scale-105' : 'hover:scale-105'
+          }`}
+          title={isNavOpen ? "Close Navigation" : "Open Navigation"}
+        >
+          {isNavOpen ? (
+            <X className="w-7 h-7" />
+          ) : (
+            <Menu className="w-7 h-7" />
+          )}
+        </button>
+      </div>
     </div>
   );
 }

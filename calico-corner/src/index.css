@@ -1,2 +1,39 @@
-/* v4 (if you installed @tailwindcss/vite) */
 @import "tailwindcss";
+
+/* Contextual placeholder typography styling */
+input::placeholder,
+textarea::placeholder,
+select::placeholder {
+  color: #8C7A6B !important;
+  opacity: 0.65 !important;
+  font-weight: 400 !important;
+}
+
+/* Animations */
+@keyframes fabPop {
+  0% { transform: scale(0.8) translateY(10px); opacity: 0; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+@keyframes modalFadeIn {
+  0% { transform: scale(0.92); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes spinShuffle {
+  0% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(180deg) scale(1.15); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+.animate-fab-pop {
+  animation: fabPop 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-modal-pop {
+  animation: modalFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-spin-shuffle {
+  animation: spinShuffle 0.6s ease-in-out;
+}
