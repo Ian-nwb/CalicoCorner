@@ -37,3 +37,337 @@ select::placeholder {
 .animate-spin-shuffle {
   animation: spinShuffle 0.6s ease-in-out;
 }
+
+/* ---- Progress Bar Component — Adaptive Theme ---- */
+.progress-bar-card {
+  background: linear-gradient(to right, #ecfdf5, rgba(240, 253, 250, 0.7));
+}
+.progress-label {
+  color: #1a1a1a;
+}
+.progress-counter {
+  color: #6b5a50;
+}
+.progress-track {
+  background-color: rgba(255,255,255,0.7);
+}
+
+/* Global Focus Ring for Keyboard & Touch Accessibility */
+*:focus-visible {
+  outline: 3px solid #E67E22 !important;
+  outline-offset: 2px !important;
+  border-radius: 6px;
+}
+
+/* ============================================================
+   DYNAMIC TEXT RESIZING
+   ============================================================ */
+
+.text-scale-large {
+  font-size: 1.125rem !important;
+  line-height: 1.65 !important;
+  letter-spacing: 0.02em !important;
+}
+.text-scale-large p,
+.text-scale-large span,
+.text-scale-large input,
+.text-scale-large button,
+.text-scale-large select,
+.text-scale-large label {
+  font-size: 1.05em !important;
+  line-height: 1.6 !important;
+}
+
+.text-scale-xlarge {
+  font-size: 1.25rem !important;
+  line-height: 1.8 !important;
+  letter-spacing: 0.035em !important;
+}
+.text-scale-xlarge p,
+.text-scale-xlarge span,
+.text-scale-xlarge input,
+.text-scale-xlarge button,
+.text-scale-xlarge select,
+.text-scale-xlarge label {
+  font-size: 1.2em !important;
+  line-height: 1.75 !important;
+  letter-spacing: 0.03em !important;
+}
+
+/* ============================================================
+   DARK MODE — Comprehensive Contrast Overrides
+   ============================================================ */
+
+.dark-mode,
+.dark-mode body,
+.dark-mode #root {
+  background-color: #140E0C !important;
+  color: #FAF6F0 !important;
+}
+
+/* ---- Page Shell ---- */
+.dark-mode main {
+  background-color: #140E0C !important;
+}
+
+/* ---- Progress Bar — Dark Mode Overrides ---- */
+.dark-mode .progress-bar-card {
+  background: #1C1410 !important;
+  border-color: #3B2A24 !important;
+}
+.dark-mode .progress-label {
+  color: #FAF6F0 !important;
+}
+.dark-mode .progress-counter {
+  color: #B8A898 !important;
+}
+.dark-mode .progress-track {
+  background-color: #2A1C16 !important;
+  border-color: transparent !important;
+}
+
+/* ---- Header ---- */
+.dark-mode header {
+  background-color: rgba(20, 14, 12, 0.97) !important;
+  border-color: #382923 !important;
+}
+
+/* ---- All Surface Cards / Panels ---- */
+.dark-mode .bg-white,
+.dark-mode .bg-white\/80,
+.dark-mode .bg-white\/90 {
+  background-color: #1E1410 !important;
+  color: #FAF6F0 !important;
+}
+
+/* All warm cream / off-white shades */
+.dark-mode .bg-\[\#FFFDF9\],
+.dark-mode .bg-\[\#FAF6F0\],
+.dark-mode .bg-\[\#F8F1E9\],
+.dark-mode .bg-\[\#F0E4D8\],
+.dark-mode .bg-\[\#EFE3D5\] {
+  background-color: #221814 !important;
+  color: #FAF6F0 !important;
+}
+
+/* Amber/warm-tinted panels */
+.dark-mode .bg-amber-50,
+.dark-mode .bg-amber-50\/50,
+.dark-mode .bg-amber-50\/90,
+.dark-mode .bg-amber-100 {
+  background-color: #2B1E15 !important;
+  color: #F5C897 !important;
+}
+
+/* Emerald/teal/sky accent panels */
+.dark-mode .bg-emerald-50,
+.dark-mode .bg-emerald-50\/30,
+.dark-mode .bg-teal-50,
+.dark-mode .bg-sky-50,
+.dark-mode .bg-sky-50\/30,
+.dark-mode .bg-blue-50 {
+  background-color: #121E1C !important;
+  color: #9DECD9 !important;
+}
+
+/* Red / destructive panels */
+.dark-mode .bg-red-50 {
+  background-color: #200D0D !important;
+  color: #FCA5A5 !important;
+}
+
+/* Dashed / empty-state placeholders */
+.dark-mode .border-dashed {
+  border-color: #3B2A24 !important;
+}
+
+/* General border override */
+.dark-mode div,
+.dark-mode section,
+.dark-mode form,
+.dark-mode article,
+.dark-mode aside {
+  border-color: #382923;
+}
+
+/* ---- Typography ---- */
+.dark-mode p,
+.dark-mode span:not([class*="bg-"]),
+.dark-mode h1,
+.dark-mode h2,
+.dark-mode h3,
+.dark-mode h4,
+.dark-mode h5,
+.dark-mode h6,
+.dark-mode label,
+.dark-mode li,
+.dark-mode strong {
+  color: #FAF6F0 !important;
+}
+
+/* Muted / secondary text */
+.dark-mode .text-\[\#8C7A6B\],
+.dark-mode .text-\[\#7F8C8D\] {
+  color: #B8A898 !important;
+}
+
+/* Primary warm-dark text */
+.dark-mode .text-\[\#2C2421\],
+.dark-mode .text-\[\#5D4037\] {
+  color: #FAF6F0 !important;
+}
+
+/* Orange accent — keep as-is (sufficient contrast on dark) */
+.dark-mode .text-\[\#E67E22\],
+.dark-mode .text-\[\#D35400\] {
+  color: #F39C5A !important;
+}
+
+/* Gray utilities */
+.dark-mode .text-gray-600,
+.dark-mode .text-gray-700,
+.dark-mode .text-gray-800 {
+  color: #D6C4B6 !important;
+}
+
+/* Emerald text */
+.dark-mode .text-emerald-700,
+.dark-mode .text-emerald-800 {
+  color: #6EE7B7 !important;
+}
+
+/* Amber text */
+.dark-mode .text-amber-900 {
+  color: #FCD38E !important;
+}
+
+/* ---- Inputs / Selects / Textareas ---- */
+.dark-mode input,
+.dark-mode select,
+.dark-mode textarea {
+  background-color: #17100D !important;
+  color: #FFFDF9 !important;
+  border-color: #46342B !important;
+}
+
+.dark-mode input::placeholder,
+.dark-mode textarea::placeholder,
+.dark-mode select::placeholder {
+  color: #A89587 !important;
+  opacity: 1 !important;
+}
+
+/* ---- Badge / pill "category" chips ---- */
+.dark-mode .border-\[\#E8D8C8\] {
+  border-color: #3B2A24 !important;
+}
+.dark-mode .border-\[\#F5E6D3\] {
+  border-color: #3B2A24 !important;
+}
+.dark-mode .border-\[\#F0E4D8\] {
+  border-color: #382923 !important;
+}
+.dark-mode .border-\[\#E0D0C0\] {
+  border-color: #46342B !important;
+}
+
+/* Small badge chips that use bg-white */
+.dark-mode span.bg-white,
+.dark-mode span.rounded-md,
+.dark-mode span.rounded-lg,
+.dark-mode span.rounded-full {
+  background-color: #2A1C16 !important;
+  color: #FAF6F0 !important;
+  border-color: #3B2A24 !important;
+}
+
+/* Progress track backgrounds */
+.dark-mode .bg-\[\#E8D8C8\] {
+  background-color: #2A1C16 !important;
+}
+
+/* Shadow-inner wrappers (progress bar track) */
+.dark-mode .shadow-inner {
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.5) !important;
+}
+
+/* Hover/interactive states that use light backgrounds */
+.dark-mode .hover\:bg-\[\#F8F1E9\]:hover {
+  background-color: #2A1C16 !important;
+}
+.dark-mode .hover\:bg-\[\#F0E4D8\]:hover {
+  background-color: #2A1C16 !important;
+}
+.dark-mode .hover\:bg-\[\#FAF6F0\]:hover {
+  background-color: #221814 !important;
+}
+.dark-mode .hover\:bg-\[\#EFE3D5\]:hover {
+  background-color: #2A1C16 !important;
+}
+
+/* FAB & Speed-dial items */
+.dark-mode .fixed.bottom-6 .bg-white {
+  background-color: #1E1410 !important;
+  color: #FAF6F0 !important;
+  border-color: #3B2A24 !important;
+}
+
+/* Backdrop overlays — don't change */
+.dark-mode .bg-black\/80,
+.dark-mode .bg-black\/60,
+.dark-mode .bg-black\/50,
+.dark-mode .bg-black\/40 {
+  /* keep dark overlays as-is */
+}
+
+/* ============================================================
+   HIGH CONTRAST MODE (Stargardt Disease Support)
+   ============================================================ */
+
+.high-contrast {
+  background-color: #FFFFFF !important;
+  color: #000000 !important;
+}
+.high-contrast div,
+.high-contrast section,
+.high-contrast main,
+.high-contrast header,
+.high-contrast form,
+.high-contrast article {
+  background-color: #FFFFFF !important;
+  color: #000000 !important;
+  border-color: #000000 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+.high-contrast p,
+.high-contrast span,
+.high-contrast h1,
+.high-contrast h2,
+.high-contrast h3,
+.high-contrast h4,
+.high-contrast label,
+.high-contrast li,
+.high-contrast strong {
+  color: #000000 !important;
+  font-weight: 700 !important;
+}
+.high-contrast input,
+.high-contrast select,
+.high-contrast textarea {
+  background-color: #FFFFFF !important;
+  color: #000000 !important;
+  border: 2.5px solid #000000 !important;
+  font-weight: 700 !important;
+}
+.high-contrast input::placeholder,
+.high-contrast textarea::placeholder {
+  color: #111111 !important;
+  opacity: 1 !important;
+  font-weight: 600 !important;
+}
+.high-contrast button {
+  border: 2px solid #000000 !important;
+  font-weight: 800 !important;
+  box-shadow: 0 2px 0 #000000 !important;
+}

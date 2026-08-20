@@ -1,0 +1,18 @@
+{
+  "short_name": "Calico Corner",
+  "name": "Calico Corner - Shared Couple Space",
+  "description": "Trisha & Ian's cozy shared space for date ideas, checklists, photos, and live gala savings 🐾",
+  "icons": [
+    {
+      "src": "/pwa-icon.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#FAF6F0",
+  "theme_color": "#E67E22",
+  "display": "standalone",
+  "orientation": "portrait"
+}

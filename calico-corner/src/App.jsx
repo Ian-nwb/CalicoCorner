@@ -77,6 +77,26 @@ export default function App() {
     ? 'motmot'
     : 'tori';
 
+  // Feature: Settings Modal & Display Preferences
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showLogoutConfirmModal, setShowLogoutConfirmModal] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+
+  const [displayMode, setDisplayMode] = useState(() => {
+    return localStorage.getItem('calico_display_mode') || 'light'; // 'light' | 'dark' | 'high-contrast'
+  });
+  const [textSize, setTextSize] = useState(() => {
+    return localStorage.getItem('calico_text_size') || 'standard'; // 'standard' | 'large' | 'xlarge'
+  });
+
+  useEffect(() => {
+    localStorage.setItem('calico_display_mode', displayMode);
+  }, [displayMode]);
+
+  useEffect(() => {
+    localStorage.setItem('calico_text_size', textSize);
+  }, [textSize]);
+
   // Tailwind CSS loaded listener state to prevent unstyled flash
   const [, setTailwindReady] = useState(typeof window !== 'undefined' && !!window.tailwind);
 
@@ -92,7 +112,13 @@ export default function App() {
   const [newTodoCategory, setNewTodoCategory] = useState('Personal');
 
   // Push Notifications state
-  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
+    return localStorage.getItem('calico_notifications_enabled') === 'true';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('calico_notifications_enabled', notificationsEnabled);
+  }, [notificationsEnabled]);
 
   // Feature: Coin Flip State
   const [coinSide, setCoinSide] = useState('heads');
@@ -149,11 +175,9 @@ export default function App() {
 
   // Initial page setup + Supabase session check
   useEffect(() => {
-    // Force light background on root/body to override Vite's default dark CSS template
     document.body.style.backgroundColor = '#FAF6F0';
     document.body.style.color = '#2C2421';
 
-    // Automatically re-render as soon as Tailwind finishes loading in browser
     if (typeof window !== 'undefined') {
       if (window.tailwind) {
         setTailwindReady(true);
@@ -166,16 +190,18 @@ export default function App() {
       }
     }
 
-    // Check Notification support
-    if ('Notification' in window) {
-      if (Notification.permission === 'granted') {
-        setNotificationsEnabled(true);
-      }
+    if ('Notification' in window && Notification.permission === 'granted') {
+      setNotificationsEnabled(true);
     }
-    // Fetch initial Daily Kitten
+
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
     fetchRandomCat();
 
-    // Restore Supabase session on load
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         setUser(session.user);
@@ -222,7 +248,6 @@ export default function App() {
       });
   }, [isAuthenticated]);
 
-  // Fetch Gala funds cell from Google Sheet
   const fetchGalaFunds = async () => {
     if (!sheetId.trim()) {
       setSheetError('Please enter a Google Sheet ID or URL.');
@@ -233,7 +258,6 @@ export default function App() {
     setSheetError('');
 
     try {
-      // Extract Google Sheet ID if full URL was pasted
       let extractedId = sheetId.trim();
       const match = extractedId.match(/\/d\/([a-zA-Z0-9-_]+)/);
       if (match && match[1]) {
@@ -242,7 +266,6 @@ export default function App() {
 
       let fetchedValue = null;
 
-      // Method 1: If API key is provided, use official Google Sheets API v4
       if (apiKey.trim()) {
         const targetRange = cellRange.trim() || 'A1';
         const url = `https://sheets.googleapis.com/v4/spreadsheets/${extractedId}/values/${encodeURIComponent(targetRange)}?key=${apiKey.trim()}`;
@@ -255,7 +278,6 @@ export default function App() {
           fetchedValue = data.values[0][0];
         }
       } else {
-        // Method 2: Public Google Sheets Visualization API (gviz/tq) without requiring an API key
         const gvizUrl = `https://docs.google.com/spreadsheets/d/${extractedId}/gviz/tq?tqx=out:json`;
         const response = await fetch(gvizUrl);
         if (!response.ok) {
@@ -263,20 +285,17 @@ export default function App() {
         }
         const text = await response.text();
 
-        // Extract JSON payload from Google Visualization response wrappers
         const jsonMatch = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);/);
         if (jsonMatch && jsonMatch[1]) {
           const parsed = JSON.parse(jsonMatch[1]);
           const rows = parsed?.table?.rows;
           if (rows && rows.length > 0 && rows[0].c && rows[0].c[0]) {
-            // Get raw cell value or formatted value
             fetchedValue = rows[0].c[0].v !== null ? rows[0].c[0].v : rows[0].c[0].f;
           }
         }
       }
 
       if (fetchedValue !== null) {
-        // Parse numeric value from cell string (removes currency signs or commas)
         const numVal = parseFloat(String(fetchedValue).replace(/[^0-9.-]+/g, ''));
         if (!isNaN(numVal)) {
           setGalaFundAmount(numVal);
@@ -296,27 +315,46 @@ export default function App() {
     }
   };
 
-  const requestNotificationPermission = async () => {
-    if (!('Notification' in window)) {
-      alert('This browser does not support desktop/mobile notifications.');
-      return;
-    }
-    try {
-      const permission = await Notification.requestPermission();
-      if (permission === 'granted') {
-        setNotificationsEnabled(true);
-        playSound('success');
-        sendNotification('Calico Corner Active! 🐾', 'Alerts ready for partner messages & tasks.');
-      } else {
-        setNotificationsEnabled(false);
+  const handleAddToHomeScreen = async () => {
+    playSound('pop');
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setDeferredPrompt(null);
       }
-    } catch (err) {
-      console.error('Notification permission error:', err);
+    } else {
+      alert("To add Calico Corner to your Home Screen:\n\n1. Tap your browser menu (⋮ or Share button).\n2. Tap 'Add to Home screen' or 'Install App'. 📱");
+    }
+  };
+
+  const handleToggleNotifications = async () => {
+    if (!notificationsEnabled) {
+      if ('Notification' in window) {
+        try {
+          const permission = await Notification.requestPermission();
+          if (permission === 'granted') {
+            setNotificationsEnabled(true);
+            playSound('success');
+            sendNotification('Calico Corner Notifications Active! 🐾', 'Alerts ready for partner tasks & coin flips.');
+          } else {
+            setNotificationsEnabled(false);
+            alert('Notification permission was not granted by browser settings.');
+          }
+        } catch (err) {
+          console.error('Notification error:', err);
+        }
+      } else {
+        alert('This browser does not support desktop/mobile notifications.');
+      }
+    } else {
+      setNotificationsEnabled(false);
+      playSound('pop');
     }
   };
 
   const sendNotification = (title, body) => {
-    if ('Notification' in window && Notification.permission === 'granted') {
+    if (notificationsEnabled && 'Notification' in window && Notification.permission === 'granted') {
       try {
         new Notification(title, { body });
       } catch (e) {
@@ -508,7 +546,6 @@ export default function App() {
     e.preventDefault();
     if (!newTodoText.trim()) return;
 
-    // Enforce owner check in UI handler
     if (userRole !== todoUserTab) {
       alert(`Read-only mode: You can only add items to your own (${userRole.toUpperCase()}) checklist.`);
       return;
@@ -535,7 +572,7 @@ export default function App() {
   };
 
   const handleToggleTodo = async (id, targetUser) => {
-    if (userRole !== targetUser) return; // Restrict toggle for non-owners
+    if (userRole !== targetUser) return;
 
     const list = targetUser === 'tori' ? toriTodos : motmotTodos;
     const item = list.find(t => t.id === id);
@@ -557,7 +594,7 @@ export default function App() {
   };
 
   const handleDeleteTodo = async (id, targetUser) => {
-    if (userRole !== targetUser) return; // Restrict deletion for non-owners
+    if (userRole !== targetUser) return;
 
     const { error } = await supabase.from('todos').delete().eq('id', id);
     if (!error) {
@@ -631,15 +668,19 @@ export default function App() {
       }
     } catch (err) {
       console.error('Delete photo error:', err);
-    } fontFinally: {
+    } finally {
       setIsDeletingPhoto(false);
       setPhotoToDelete(null);
     }
   };
 
+  const activeDisplayClass = displayMode === 'dark' ? 'dark-mode' : displayMode === 'high-contrast' ? 'high-contrast' : '';
+  const activeScaleClass = textSize === 'large' ? 'text-scale-large' : textSize === 'xlarge' ? 'text-scale-xlarge' : '';
+  const settingsClasses = [activeDisplayClass, activeScaleClass].filter(Boolean).join(' ');
+
   if (!authChecked) {
     return (
-      <div className="min-h-screen bg-[#FAF6F0] flex items-center justify-center">
+      <div className={`min-h-screen bg-[#FAF6F0] flex items-center justify-center ${settingsClasses}`}>
         <Cat className="w-12 h-12 animate-bounce text-[#E67E22]" />
       </div>
     );
@@ -647,11 +688,9 @@ export default function App() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-[#FAF6F0] flex flex-col items-center justify-center p-4 text-[#2C2421] font-sans">
+      <div className={`min-h-screen bg-[#FAF6F0] flex flex-col items-center justify-center p-4 text-[#2C2421] font-sans ${settingsClasses}`}>
         <style>{`
           :root, body, html, #root {
-            background-color: #FAF6F0 !important;
-            color: #2C2421 !important;
             font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
             margin: 0;
             padding: 0;
@@ -713,6 +752,7 @@ export default function App() {
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8C7A6B] hover:text-[#2C2421]"
+                  title={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -735,18 +775,16 @@ export default function App() {
   const isTodoOwner = userRole === todoUserTab;
 
   return (
-    <div className="min-h-screen bg-[#FAF6F0] text-[#2C2421] font-sans flex flex-col pb-20">
+    <div className={`min-h-screen bg-[#FAF6F0] text-[#2C2421] font-sans flex flex-col pb-20 ${settingsClasses}`}>
       <style>{`
         :root, body, #root {
-          background-color: #FAF6F0 !important;
-          color: #2C2421 !important;
           min-height: 100vh;
           margin: 0;
           padding: 0;
         }
       `}</style>
 
-      {/* Header */}
+      {/* Header Bar */}
       <header className="bg-white/90 backdrop-blur-md sticky top-0 z-30 border-b border-[#F0E4D8] px-4 py-3 shadow-xs">
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
@@ -766,20 +804,22 @@ export default function App() {
 
           <div className="flex items-center gap-2">
             <button
-              onClick={requestNotificationPermission}
-              className={`p-2 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                notificationsEnabled
-                  ? 'bg-amber-50 border-amber-200 text-amber-800'
-                  : 'bg-gray-100 border-gray-200 text-gray-600 hover:bg-gray-200'
-              }`}
-              title={notificationsEnabled ? 'Notifications Active' : 'Enable Mobile Push Notifications'}
+              onClick={() => {
+                setShowSettingsModal(true);
+                playSound('pop');
+              }}
+              className="p-2 text-[#8C7A6B] hover:text-[#E67E22] hover:bg-[#F8F1E9] rounded-xl transition-all flex items-center gap-1.5 border border-[#E8D8C8] bg-white shadow-xs"
+              title="Application Settings & Display Preferences"
             >
-              {notificationsEnabled ? <BellRing className="w-4 h-4 text-[#E67E22]" /> : <Bell className="w-4 h-4" />}
-              <span className="hidden sm:inline text-xs">Alerts</span>
+              <Settings className="w-5 h-5 text-[#E67E22]" />
+              <span className="hidden sm:inline text-xs font-bold text-[#2C2421]">Settings</span>
             </button>
 
             <button
-              onClick={handleSignOut}
+              onClick={() => {
+                setShowLogoutConfirmModal(true);
+                playSound('pop');
+              }}
               className="p-2 text-[#8C7A6B] hover:text-[#D35400] hover:bg-[#F8F1E9] rounded-xl transition-all flex items-center gap-1"
               title="Sign Out"
             >
@@ -840,7 +880,7 @@ export default function App() {
               {!isTodoOwner && (
                 <div className="mb-6 p-3.5 bg-amber-50/90 border border-amber-200 rounded-2xl flex items-center justify-between text-amber-900 text-xs font-semibold shadow-xs">
                   <div className="flex items-center gap-2">
-                    <Eye className="w-4 h-4 text-amber-600 shrink-0" />
+                    <Settings className="w-4 h-4 text-amber-600 shrink-0" />
                     <span>🔒 Read-Only Mode — You are viewing {todoUserTab === 'tori' ? "Tori's" : "Motmot's"} checklist. Only the owner can edit items.</span>
                   </div>
                   <span className="text-[10px] px-2.5 py-1 bg-amber-200/70 text-amber-900 rounded-full font-extrabold uppercase shrink-0">
@@ -858,21 +898,21 @@ export default function App() {
                 const isTori = todoUserTab === 'tori';
 
                 return (
-                  <div className={`p-4 rounded-2xl border mb-6 transition-all shadow-sm ${
+                  <div className={`progress-bar-card p-4 rounded-2xl border mb-6 transition-all shadow-sm ${
                     isTori
-                      ? 'bg-gradient-to-r from-emerald-50 to-teal-50/70 border-emerald-200'
-                      : 'bg-gradient-to-r from-sky-50 to-blue-50/70 border-sky-200'
+                      ? 'border-emerald-200'
+                      : 'border-sky-200'
                   }`}>
                     <div className="flex justify-between items-center mb-2">
-                      <span className="text-xs font-extrabold text-[#2C2421] flex items-center gap-1.5">
-                        <User className={`w-4 h-4 ${isTori ? 'text-emerald-600' : 'text-sky-600'}`} />
+                      <span className="progress-label text-xs font-extrabold flex items-center gap-1.5">
+                        <User className={`w-4 h-4 ${isTori ? 'text-emerald-500' : 'text-sky-500'}`} />
                         {isTori ? "Tori's Progress" : "Motmot's Progress"}
                       </span>
-                      <span className="text-xs font-bold text-[#8C7A6B]">
+                      <span className="progress-counter text-xs font-bold">
                         {completedCount} / {totalCount} Done ({percent}%)
                       </span>
                     </div>
-                    <div className="w-full h-3 bg-white/80 rounded-full overflow-hidden border border-black/5 shadow-inner">
+                    <div className="progress-track w-full h-3 rounded-full overflow-hidden border border-black/5 shadow-inner">
                       <div
                         className={`h-full transition-all duration-500 rounded-full ${
                           isTori
@@ -1924,6 +1964,176 @@ export default function App() {
         )}
 
       </main>
+
+      {/* Main Settings Modal */}
+      {showSettingsModal && (
+        <div className="fixed inset-0 bg-[#2C2421]/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-[#F0E4D8] relative animate-modal-pop space-y-5">
+            <div className="flex items-center justify-between border-b border-[#F5E6D3] pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 bg-amber-100 text-[#D35400] rounded-xl flex items-center justify-center font-bold">
+                  <Settings className="w-5 h-5 text-[#E67E22]" />
+                </div>
+                <div>
+                  <h3 className="font-black text-base text-[#2C2421]">Settings</h3>
+                  <p className="text-[10px] text-[#8C7A6B]">Display modes, text sizing & notification controls</p>
+                </div>
+              </div>
+              <button onClick={() => setShowSettingsModal(false)} className="p-1.5 text-[#8C7A6B] hover:text-[#2C2421] rounded-full">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Mutually Exclusive Display Mode Selector */}
+            <div className="p-3.5 bg-[#FFFDF9] border border-[#F5E6D3] rounded-2xl space-y-2">
+              <div>
+                <h4 className="font-extrabold text-xs text-[#2C2421]">Display Mode</h4>
+                <p className="text-[10px] text-[#8C7A6B]">Choose Light, Dark, or High Contrast Mode (mutually exclusive)</p>
+              </div>
+              <div className="grid grid-cols-3 gap-2 pt-1">
+                {[
+                  { id: 'light', label: 'Light ☀️' },
+                  { id: 'dark', label: 'Dark 🌙' },
+                  { id: 'high-contrast', label: 'High Contrast 🌗' }
+                ].map(opt => (
+                  <button
+                    key={opt.id}
+                    onClick={() => {
+                      setDisplayMode(opt.id);
+                      playSound('pop');
+                    }}
+                    className={`py-2 px-1 text-[11px] font-extrabold rounded-xl border transition-all ${
+                      displayMode === opt.id
+                        ? 'bg-[#E67E22] text-white border-[#E67E22] shadow-xs'
+                        : 'bg-white text-[#2C2421] border-[#E8D8C8] hover:bg-[#FAF6F0]'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Text Size Scaling
+            <div className="p-3.5 bg-[#FFFDF9] border border-[#F5E6D3] rounded-2xl space-y-2">
+              <div>
+                <h4 className="font-extrabold text-xs text-[#2C2421]">Text Size Scaling</h4>
+                <p className="text-[10px] text-[#8C7A6B]">Adjust font sizing & line spacing across the application</p>
+              </div>
+              <div className="grid grid-cols-3 gap-2 pt-1">
+                {[
+                  { id: 'standard', label: 'Standard' },
+                  { id: 'large', label: 'Large (+20%)' },
+                  { id: 'xlarge', label: 'Extra Large (+40%)' }
+                ].map(opt => (
+                  <button
+                    key={opt.id}
+                    onClick={() => {
+                      setTextSize(opt.id);
+                      playSound('pop');
+                    }}
+                    className={`py-2 px-1 text-[11px] font-extrabold rounded-xl border transition-all ${
+                      textSize === opt.id
+                        ? 'bg-[#E67E22] text-white border-[#E67E22] shadow-xs'
+                        : 'bg-white text-[#2C2421] border-[#E8D8C8] hover:bg-[#FAF6F0]'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div> */}
+
+            {/* Notification Controls with Toggle */}
+            <div className="flex items-center justify-between p-3.5 bg-[#FFFDF9] border border-[#F5E6D3] rounded-2xl">
+              <div>
+                <h4 className="font-extrabold text-xs text-[#2C2421]">Application Notifications</h4>
+                <p className="text-[10px] text-[#8C7A6B]">Receive push alerts for coin flips & partner tasks</p>
+              </div>
+              <button
+                onClick={handleToggleNotifications}
+                className={`w-12 h-6 rounded-full transition-colors relative ${
+                  notificationsEnabled ? 'bg-[#E67E22]' : 'bg-[#E8D8C8]'
+                }`}
+                title={notificationsEnabled ? "Notifications Enabled" : "Notifications Disabled"}
+              >
+                <div className={`w-5 h-5 bg-white rounded-full transition-transform absolute top-0.5 ${
+                  notificationsEnabled ? 'left-6.5' : 'left-0.5'
+                }`} />
+              </button>
+            </div>
+
+            {/* PWA Add to Home Screen Option */}
+            <div className="p-3.5 bg-[#FFFDF9] border border-[#F5E6D3] rounded-2xl flex items-center justify-between">
+              <div>
+                <h4 className="font-extrabold text-xs text-[#2C2421]">Add to Home Screen</h4>
+                <p className="text-[10px] text-[#8C7A6B]">Install Calico Corner as an app on your mobile device</p>
+              </div>
+              <button
+                onClick={handleAddToHomeScreen}
+                className="px-3 py-1.5 bg-gradient-to-r from-[#E67E22] to-[#D35400] text-white text-xs font-extrabold rounded-xl shadow-xs hover:shadow-orange-200 transition-all shrink-0 flex items-center gap-1"
+              >
+                <span>Install App 📲</span>
+              </button>
+            </div>
+
+            <div className="pt-2 flex gap-2">
+              <button
+                onClick={() => {
+                  setDisplayMode('light');
+                  setTextSize('standard');
+                  playSound('pop');
+                }}
+                className="flex-1 py-2.5 bg-[#FAF6F0] border border-[#E8D8C8] text-[#5D4037] font-bold text-xs rounded-xl hover:bg-[#F0E4D8]"
+              >
+                Reset Defaults
+              </button>
+              <button
+                onClick={() => setShowSettingsModal(false)}
+                className="flex-1 py-2.5 bg-[#D35400] text-[#FFFFFF] font-bold text-xs rounded-xl hover:bg-[#B94A00]"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutConfirmModal && (
+        <div className="fixed inset-0 bg-[#2C2421]/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full space-y-4 shadow-2xl border border-[#F0E4D8] animate-modal-pop text-center">
+            <div className="w-12 h-12 bg-amber-100 text-[#D35400] rounded-2xl mx-auto flex items-center justify-center shadow-xs">
+              <LogOut className="w-6 h-6" />
+            </div>
+
+            <div>
+              <h3 className="font-extrabold text-base text-[#2C2421]">Sign Out of Calico Corner?</h3>
+              <p className="text-xs text-[#8C7A6B] mt-1.5 leading-relaxed">
+                Are you sure you want to log out? You can sign back in anytime with your partner credentials.
+              </p>
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <button
+                onClick={() => setShowLogoutConfirmModal(false)}
+                className="flex-1 py-2.5 bg-[#FAF6F0] text-[#2C2421] border border-[#E8D8C8] rounded-xl text-xs font-bold hover:bg-[#F0E4D8] transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setShowLogoutConfirmModal(false);
+                  handleSignOut();
+                }}
+                className="flex-1 py-2.5 bg-gradient-to-r from-[#E67E22] to-[#D35400] text-white rounded-xl text-xs font-bold hover:shadow-md transition-all flex items-center justify-center gap-1 shadow-sm"
+              >
+                <span>Sign Out</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Floating Speed Dial Navigation (FAB) */}
       {/* Dim Backdrop Overlay */}
