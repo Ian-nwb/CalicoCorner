@@ -710,7 +710,7 @@ export default function App() {
               Calico Corner
             </h1>
             <p className="text-sm text-[#7F8C8D] mt-1 font-medium">
-              Trisha & Ian's cozy shared space 🐾
+              Tori and Motmot's corner of the Internet🐾
             </p>
           </div>
 
@@ -797,7 +797,7 @@ export default function App() {
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               </div>
               <p className="text-xs text-[#8C7A6B] font-medium mt-0.5">
-                Logged in as <strong className="capitalize text-[#E67E22]">{userRole}</strong> • Connected with {partnerName} 💕
+                Logged in as <strong className="capitalize text-[#E67E22]">{userRole}</strong> 💚🩵💚🩵
               </p>
             </div>
           </div>
@@ -847,8 +847,8 @@ export default function App() {
                   </h2>
                   <p className="text-xs text-[#8C7A6B]">
                     {todoUserTab === 'tori'
-                      ? "Tori's workspace for personal tasks, errands, and shopping!"
-                      : "Motmot's workspace for workouts, tech tasks, and personal goals!"}
+                      ? "Tori's workspace for personal tasks, games, and daily activities!"
+                      : "Motmot's workspace for personal tasks, games, and daily activities!"}
                   </p>
                 </div>
 
@@ -881,7 +881,7 @@ export default function App() {
                 <div className="mb-6 p-3.5 bg-amber-50/90 border border-amber-200 rounded-2xl flex items-center justify-between text-amber-900 text-xs font-semibold shadow-xs">
                   <div className="flex items-center gap-2">
                     <Settings className="w-4 h-4 text-amber-600 shrink-0" />
-                    <span>🔒 Read-Only Mode — You are viewing {todoUserTab === 'tori' ? "Tori's" : "Motmot's"} checklist. Only the owner can edit items.</span>
+                    <span>🔒 Read-Only Mode — You are viewing {todoUserTab === 'tori' ? "Tori's" : "Motmot's"} checklist. Only your partner can edit this.</span>
                   </div>
                   <span className="text-[10px] px-2.5 py-1 bg-amber-200/70 text-amber-900 rounded-full font-extrabold uppercase shrink-0">
                     View Only
@@ -947,10 +947,10 @@ export default function App() {
                       className="px-3.5 py-2.5 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22] text-[#2C2421]"
                     >
                       <option value="Personal">Personal</option>
-                      <option value="Chore">Chore</option>
-                      <option value="Work">Work/Study</option>
-                      <option value="Fitness">Fitness</option>
-                      <option value="Shopping">Shopping</option>
+                      <option value="Chore">Games</option>
+                      <option value="Work">Work/School</option>
+                      <option value="Daily Stuff">Daily Stuff</option>
+                      <option value="Other">Other</option>
                     </select>
                     <button
                       type="submit"
@@ -1045,7 +1045,7 @@ export default function App() {
               </div>
 
               <h2 className="text-2xl font-black text-[#2C2421] mb-2">Random Cat of the Day 🐱</h2>
-              <p className="text-xs text-[#8C7A6B] mb-6">Powered by Cat API & CATAAS - Daily cuteness boost!</p>
+              <p className="text-xs text-[#8C7A6B] mb-6">Powered by Cat API & CATAAS</p>
 
               <div className="relative aspect-square max-w-md mx-auto rounded-2xl overflow-hidden shadow-inner bg-[#F8F1E9] mb-4 group border border-[#F5E6D3]">
                 {isLoadingCat || !kittenUrl ? (
@@ -1117,11 +1117,11 @@ export default function App() {
             <div className="bg-white rounded-3xl p-6 shadow-md border border-[#F0E4D8] text-center">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-[#D35400] rounded-full text-xs font-bold mb-4">
                 <Coins className="w-3.5 h-3.5" />
-                <span>Decision Toss</span>
+                <span>Decision Time</span>
               </div>
 
-              <h2 className="text-2xl font-black text-[#2C2421] mb-2">Toss the Coin 🪙</h2>
-              <p className="text-xs text-[#8C7A6B] mb-6">Tap to toss and let the Calico Coin decide!</p>
+              <h2 className="text-2xl font-black text-[#2C2421] mb-2">Toss the Coin of Decision Making 🪙</h2>
+              <p className="text-xs text-[#8C7A6B] mb-6">Tap to toss!</p>
 
               <div className="py-10 flex flex-col items-center justify-center">
                 <div
@@ -1138,13 +1138,13 @@ export default function App() {
                     {coinSide === 'heads' ? (
                       <div className="flex flex-col items-center">
                         <Cat className="w-14 h-14 mb-1" />
-                        <span className="text-xs font-extrabold uppercase tracking-widest">Calico Paw</span>
+                        <span className="text-xs font-extrabold uppercase tracking-widest">Scratch</span>
                         <span className="text-[10px] opacity-80">(HEADS)</span>
                       </div>
                     ) : (
                       <div className="flex flex-col items-center">
                         <Sparkles className="w-14 h-14 mb-1 text-amber-300" />
-                        <span className="text-xs font-extrabold uppercase tracking-widest">Calico Tail</span>
+                        <span className="text-xs font-extrabold uppercase tracking-widest">Bite</span>
                         <span className="text-[10px] opacity-80">(TAILS)</span>
                       </div>
                     )}
@@ -1177,7 +1177,7 @@ export default function App() {
                     <Calendar className="w-3.5 h-3.5" />
                     <span>Bucket List</span>
                   </div>
-                  <h2 className="text-2xl font-black text-[#2C2421]">Date Ideas Checklist 📅</h2>
+                  <h2 className="text-2xl font-black text-[#2C2421]">Date Ideas 📅</h2>
                   <p className="text-xs text-[#8C7A6B]">Plan, categorize, and check off activities together!</p>
                 </div>
 
@@ -1232,7 +1232,7 @@ export default function App() {
                     required
                     value={newIdeaTitle}
                     onChange={e => setNewIdeaTitle(e.target.value)}
-                    placeholder="Date idea (e.g. Sunset Picnic, Stargazing)..."
+                    placeholder="Date idea (e.g. Mall, Picnic)..."
                     className="sm:col-span-2 px-3 py-2 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22] placeholder:text-[#8C7A6B]/70"
                   />
                   <select
@@ -1251,7 +1251,7 @@ export default function App() {
                     type="text"
                     value={newIdeaLocation}
                     onChange={e => setNewIdeaLocation(e.target.value)}
-                    placeholder="Location (optional, e.g. Seaside Park)..."
+                    placeholder="Location (optional, e.g. Park)..."
                     className="flex-1 px-3 py-2 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22] placeholder:text-[#8C7A6B]/70"
                   />
                   <button
@@ -1409,19 +1409,19 @@ export default function App() {
                   <Calendar className="w-3.5 h-3.5" />
                   <span>Scheduled Plans</span>
                 </div>
-                <h2 className="text-2xl font-black text-[#2C2421]">Date Agenda 🗓️</h2>
+                <h2 className="text-2xl font-black text-[#2C2421]">Agenda Planning 🗓️</h2>
                 <p className="text-xs text-[#8C7A6B]">Schedule upcoming dates, times, spots, and notes together.</p>
               </div>
 
               <form onSubmit={handleAddAgendaPlan} className="p-4 bg-[#FFFDF9] rounded-2xl border border-[#F5E6D3] mb-6 space-y-3">
-                <p className="text-xs font-bold text-[#5D4037] uppercase tracking-wider">Schedule a Date Plan</p>
+                <p className="text-xs font-bold text-[#5D4037] uppercase tracking-wider">Schedule a Plan</p>
                 <div>
                   <input
                     type="text"
                     required
                     value={planTitle}
                     onChange={e => setPlanTitle(e.target.value)}
-                    placeholder="Plan title (e.g. Anniversary Dinner, Weekend Trip)..."
+                    placeholder="Plan title (e.g. Monthsary, Staycation)..."
                     className="w-full px-3 py-2 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22] placeholder:text-[#8C7A6B]/70"
                   />
                 </div>
@@ -1528,8 +1528,8 @@ export default function App() {
                       <ImageIcon className="w-3.5 h-3.5" />
                       <span>Memory Vault</span>
                     </div>
-                    <h2 className="text-2xl font-black text-[#2C2421]">Couple Photo Gallery 🖼️</h2>
-                    <p className="text-xs text-[#8C7A6B]">Store your precious memories together</p>
+                    <h2 className="text-2xl font-black text-[#2C2421]">Photo Gallery 🖼️</h2>
+                    <p className="text-xs text-[#8C7A6B]">Store our precious memories together</p>
                   </div>
 
                   <div className="flex items-center gap-3">
@@ -2153,7 +2153,7 @@ export default function App() {
               { id: 'coin', label: 'Toss Coin', icon: Coins },
               { id: 'todo', label: 'Checklists', icon: CheckSquare },
               { id: 'dates', label: 'Date Ideas', icon: Calendar },
-              { id: 'plans', label: 'Date Agenda', icon: Compass },
+              { id: 'plans', label: 'Agenda Planning', icon: Compass },
               { id: 'gallery', label: 'Photo Gallery', icon: ImageIcon },
               { id: 'gala', label: 'Gala Funds', icon: Wallet }
             ].map((item, idx) => {
