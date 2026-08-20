@@ -62,13 +62,20 @@ const playSound = (type) => {
 export default function App() {
   // Auth state
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [, setUser] = useState(null);
+  const [user, setUser] = useState(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [authChecked, setAuthChecked] = useState(false);
   const partnerName = 'Tori & Motmot';
+
+  // Role detection: 'tori' vs 'motmot'
+  const userRole = user?.email?.toLowerCase().includes('tori')
+    ? 'tori'
+    : user?.email?.toLowerCase().includes('motmot') || user?.email?.toLowerCase().includes('ian')
+    ? 'motmot'
+    : 'tori';
 
   // Tailwind CSS loaded listener state to prevent unstyled flash
   const [, setTailwindReady] = useState(typeof window !== 'undefined' && !!window.tailwind);
@@ -125,6 +132,8 @@ export default function App() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
   const [activeLightbox, setActiveLightbox] = useState(null);
+  const [photoToDelete, setPhotoToDelete] = useState(null);
+  const [isDeletingPhoto, setIsDeletingPhoto] = useState(false);
 
   // Feature: Gala Funds (Google Sheets API Connection)
   const [sheetId, setSheetId] = useState('');
@@ -498,6 +507,13 @@ export default function App() {
   const handleAddTodoItem = async (e) => {
     e.preventDefault();
     if (!newTodoText.trim()) return;
+
+    // Enforce owner check in UI handler
+    if (userRole !== todoUserTab) {
+      alert(`Read-only mode: You can only add items to your own (${userRole.toUpperCase()}) checklist.`);
+      return;
+    }
+
     const { data, error } = await supabase
       .from('todos')
       .insert({
@@ -519,6 +535,8 @@ export default function App() {
   };
 
   const handleToggleTodo = async (id, targetUser) => {
+    if (userRole !== targetUser) return; // Restrict toggle for non-owners
+
     const list = targetUser === 'tori' ? toriTodos : motmotTodos;
     const item = list.find(t => t.id === id);
     if (!item) return;
@@ -539,6 +557,8 @@ export default function App() {
   };
 
   const handleDeleteTodo = async (id, targetUser) => {
+    if (userRole !== targetUser) return; // Restrict deletion for non-owners
+
     const { error } = await supabase.from('todos').delete().eq('id', id);
     if (!error) {
       if (targetUser === 'tori') {
@@ -590,6 +610,31 @@ export default function App() {
     setPreviewImage(null);
     setSelectedFile(null);
     setNewImageCaption('');
+  };
+
+  const handleDeleteGalleryPhoto = async () => {
+    if (!photoToDelete) return;
+    setIsDeletingPhoto(true);
+    try {
+      const urlParts = photoToDelete.image_url.split('/');
+      const fileName = urlParts[urlParts.length - 1];
+      if (fileName) {
+        await supabase.storage.from('gallery').remove([fileName]);
+      }
+      const { error } = await supabase.from('gallery').delete().eq('id', photoToDelete.id);
+      if (!error) {
+        setGallery(prev => prev.filter(p => p.id !== photoToDelete.id));
+        if (activeLightbox?.id === photoToDelete.id) {
+          setActiveLightbox(null);
+        }
+        playSound('pop');
+      }
+    } catch (err) {
+      console.error('Delete photo error:', err);
+    } fontFinally: {
+      setIsDeletingPhoto(false);
+      setPhotoToDelete(null);
+    }
   };
 
   if (!authChecked) {
@@ -687,6 +732,8 @@ export default function App() {
     );
   }
 
+  const isTodoOwner = userRole === todoUserTab;
+
   return (
     <div className="min-h-screen bg-[#FAF6F0] text-[#2C2421] font-sans flex flex-col pb-20">
       <style>{`
@@ -711,7 +758,9 @@ export default function App() {
                 <h1 className="font-extrabold text-lg text-[#2C2421] leading-none">Calico Corner</h1>
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               </div>
-              <p className="text-xs text-[#8C7A6B] font-medium mt-0.5">Connected with {partnerName} 💕</p>
+              <p className="text-xs text-[#8C7A6B] font-medium mt-0.5">
+                Logged in as <strong className="capitalize text-[#E67E22]">{userRole}</strong> • Connected with {partnerName} 💕
+              </p>
             </div>
           </div>
 
@@ -787,6 +836,19 @@ export default function App() {
                 </div>
               </div>
 
+              {/* Read-Only Access Banner for Non-Owners */}
+              {!isTodoOwner && (
+                <div className="mb-6 p-3.5 bg-amber-50/90 border border-amber-200 rounded-2xl flex items-center justify-between text-amber-900 text-xs font-semibold shadow-xs">
+                  <div className="flex items-center gap-2">
+                    <Eye className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>🔒 Read-Only Mode — You are viewing {todoUserTab === 'tori' ? "Tori's" : "Motmot's"} checklist. Only the owner can edit items.</span>
+                  </div>
+                  <span className="text-[10px] px-2.5 py-1 bg-amber-200/70 text-amber-900 rounded-full font-extrabold uppercase shrink-0">
+                    View Only
+                  </span>
+                </div>
+              )}
+
               {/* Progress Tracker Bar */}
               {(() => {
                 const currentList = todoUserTab === 'tori' ? toriTodos : motmotTodos;
@@ -824,44 +886,50 @@ export default function App() {
                 );
               })()}
 
-              {/* Add New Task Form */}
-              <form onSubmit={handleAddTodoItem} className="p-4 bg-[#FFFDF9] rounded-2xl border border-[#F5E6D3] mb-6 space-y-3 shadow-xs">
-                <p className="text-xs font-bold text-[#5D4037] uppercase tracking-wider">
-                  Add task to {todoUserTab === 'tori' ? "Tori's Checklist 💚" : "Motmot's Checklist 🩵"}
-                </p>
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <input
-                    type="text"
-                    required
-                    value={newTodoText}
-                    onChange={e => setNewTodoText(e.target.value)}
-                    placeholder={todoUserTab === 'tori' ? "Add task for Tori (e.g. Buy groceries, Study)..." : "Add task for Motmot (e.g. Workout, Coding)..."}
-                    className="flex-1 px-3.5 py-2.5 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22] transition-colors placeholder:text-[#8C7A6B]/70"
-                  />
-                  <select
-                    value={newTodoCategory}
-                    onChange={e => setNewTodoCategory(e.target.value)}
-                    className="px-3.5 py-2.5 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22] text-[#2C2421]"
-                  >
-                    <option value="Personal">Personal</option>
-                    <option value="Chore">Chore</option>
-                    <option value="Work">Work/Study</option>
-                    <option value="Fitness">Fitness</option>
-                    <option value="Shopping">Shopping</option>
-                  </select>
-                  <button
-                    type="submit"
-                    className={`px-4 py-2.5 text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1 shadow-sm ${
-                      todoUserTab === 'tori'
-                        ? 'bg-emerald-600 hover:bg-emerald-700'
-                        : 'bg-sky-600 hover:bg-sky-700'
-                    }`}
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>Add Task</span>
-                  </button>
+              {/* Add New Task Form (Owner Only) */}
+              {isTodoOwner ? (
+                <form onSubmit={handleAddTodoItem} className="p-4 bg-[#FFFDF9] rounded-2xl border border-[#F5E6D3] mb-6 space-y-3 shadow-xs">
+                  <p className="text-xs font-bold text-[#5D4037] uppercase tracking-wider">
+                    Add task to {todoUserTab === 'tori' ? "Tori's Checklist 💚" : "Motmot's Checklist 🩵"}
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <input
+                      type="text"
+                      required
+                      value={newTodoText}
+                      onChange={e => setNewTodoText(e.target.value)}
+                      placeholder={todoUserTab === 'tori' ? "Add task for Tori (e.g. Buy groceries, Study)..." : "Add task for Motmot (e.g. Workout, Coding)..."}
+                      className="flex-1 px-3.5 py-2.5 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22] transition-colors placeholder:text-[#8C7A6B]/70"
+                    />
+                    <select
+                      value={newTodoCategory}
+                      onChange={e => setNewTodoCategory(e.target.value)}
+                      className="px-3.5 py-2.5 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22] text-[#2C2421]"
+                    >
+                      <option value="Personal">Personal</option>
+                      <option value="Chore">Chore</option>
+                      <option value="Work">Work/Study</option>
+                      <option value="Fitness">Fitness</option>
+                      <option value="Shopping">Shopping</option>
+                    </select>
+                    <button
+                      type="submit"
+                      className={`px-4 py-2.5 text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1 shadow-sm ${
+                        todoUserTab === 'tori'
+                          ? 'bg-emerald-600 hover:bg-emerald-700'
+                          : 'bg-sky-600 hover:bg-sky-700'
+                      }`}
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Add Task</span>
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <div className="p-4 bg-[#FAF6F0] rounded-2xl border border-dashed border-[#E8D8C8] mb-6 text-center text-xs text-[#8C7A6B]">
+                  <span>🔒 Only {todoUserTab === 'tori' ? "Tori" : "Motmot"} can add tasks to this checklist. Switch to your checklist tab to add tasks!</span>
                 </div>
-              </form>
+              )}
 
               {/* Tasks List */}
               <div className="space-y-2.5">
@@ -870,7 +938,7 @@ export default function App() {
                   if (list.length === 0) {
                     return (
                       <p className="text-xs text-center text-[#8C7A6B] py-8 bg-[#FAF6F0] rounded-2xl border border-dashed border-[#E8D8C8]">
-                        No tasks yet on {todoUserTab === 'tori' ? "Tori's" : "Motmot's"} list! Add one above ✨
+                        No tasks yet on {todoUserTab === 'tori' ? "Tori's" : "Motmot's"} list! ✨
                       </p>
                     );
                   }
@@ -884,13 +952,16 @@ export default function App() {
                       }`}
                     >
                       <div
-                        onClick={() => handleToggleTodo(item.id, todoUserTab)}
-                        className="flex items-center gap-3 cursor-pointer flex-1 mr-2"
+                        onClick={() => {
+                          if (!isTodoOwner) return;
+                          handleToggleTodo(item.id, todoUserTab);
+                        }}
+                        className={`flex items-center gap-3 flex-1 mr-2 ${isTodoOwner ? 'cursor-pointer' : 'cursor-default'}`}
                       >
                         {item.completed ? (
                           <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />
                         ) : (
-                          <Circle className="w-5 h-5 text-[#C8B8A8] shrink-0 hover:text-[#E67E22]" />
+                          <Circle className={`w-5 h-5 text-[#C8B8A8] shrink-0 ${isTodoOwner ? 'hover:text-[#E67E22]' : ''}`} />
                         )}
                         <div>
                           <p className={`text-xs sm:text-sm font-bold ${item.completed ? 'line-through text-[#8C7A6B]' : 'text-[#2C2421]'}`}>
@@ -906,13 +977,15 @@ export default function App() {
                         <span className="text-[10px] px-2.5 py-1 bg-white rounded-md border border-[#E8D8C8] text-[#8C7A6B] font-medium hidden sm:inline-block">
                           {item.category}
                         </span>
-                        <button
-                          onClick={() => handleDeleteTodo(item.id, todoUserTab)}
-                          className="p-1.5 text-[#8C7A6B] hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                          title="Delete task"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {isTodoOwner && (
+                          <button
+                            onClick={() => handleDeleteTodo(item.id, todoUserTab)}
+                            className="p-1.5 text-[#8C7A6B] hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                            title="Delete task"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   ));
@@ -1470,6 +1543,19 @@ export default function App() {
                           <p className="font-bold text-xs">{photo.caption}</p>
                           <p className="text-[10px] text-amber-200">{photo.taken_on} • {photo.category}</p>
                         </div>
+
+                        {/* Delete photo overlay button */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPhotoToDelete(photo);
+                          }}
+                          className="absolute top-3 right-3 p-2 bg-black/40 backdrop-blur-xs text-white/90 hover:text-red-400 hover:bg-black/70 rounded-full opacity-0 group-hover:opacity-100 transition-all hover:scale-110"
+                          title="Delete photo memory"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     ))}
                   </div>
@@ -1528,6 +1614,7 @@ export default function App() {
                 </div>
               </div>
 
+              {/* Lightbox Modal */}
               {activeLightbox && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
                   <div className="relative max-w-2xl w-full bg-white rounded-3xl overflow-hidden shadow-2xl">
@@ -1538,9 +1625,54 @@ export default function App() {
                       <X className="w-5 h-5" />
                     </button>
                     <img src={activeLightbox.image_url} alt={activeLightbox.caption} className="w-full max-h-[60vh] object-contain bg-black" />
-                    <div className="p-6 bg-white">
-                      <h3 className="font-bold text-lg text-[#2C2421]">{activeLightbox.caption}</h3>
-                      <p className="text-xs text-[#8C7A6B]">Saved on {activeLightbox.taken_on}</p>
+                    <div className="p-6 bg-white flex items-center justify-between gap-4">
+                      <div>
+                        <h3 className="font-bold text-lg text-[#2C2421]">{activeLightbox.caption}</h3>
+                        <p className="text-xs text-[#8C7A6B]">Saved on {activeLightbox.taken_on}</p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setPhotoToDelete(activeLightbox)}
+                        className="px-3.5 py-2 bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        <span>Delete Photo</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Photo Deletion Confirmation Modal */}
+              {photoToDelete && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                  <div className="bg-white rounded-3xl p-6 max-w-sm w-full space-y-4 shadow-2xl border border-[#F0E4D8] animate-modal-pop text-center">
+                    <div className="w-12 h-12 bg-red-100 text-red-600 rounded-2xl mx-auto flex items-center justify-center shadow-xs">
+                      <Trash2 className="w-6 h-6" />
+                    </div>
+
+                    <div>
+                      <h3 className="font-extrabold text-base text-[#2C2421]">Delete Photo Memory?</h3>
+                      <p className="text-xs text-[#8C7A6B] mt-1.5 leading-relaxed">
+                        Are you sure you want to delete <strong className="text-[#2C2421]">"{photoToDelete.caption}"</strong>? This action cannot be undone.
+                      </p>
+                    </div>
+
+                    <div className="flex gap-2 pt-2">
+                      <button
+                        onClick={() => setPhotoToDelete(null)}
+                        className="flex-1 py-2.5 bg-[#FAF6F0] text-[#2C2421] border border-[#E8D8C8] rounded-xl text-xs font-bold hover:bg-[#F0E4D8] transition-all"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleDeleteGalleryPhoto}
+                        disabled={isDeletingPhoto}
+                        className="flex-1 py-2.5 bg-red-600 text-white rounded-xl text-xs font-bold hover:bg-red-700 transition-all disabled:opacity-50 flex items-center justify-center gap-1 shadow-sm"
+                      >
+                        <span>{isDeletingPhoto ? 'Deleting...' : 'Delete Photo'}</span>
+                      </button>
                     </div>
                   </div>
                 </div>
