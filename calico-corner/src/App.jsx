@@ -5,15 +5,7 @@ import {
   Calendar, Compass, Image as ImageIcon, Camera, X, Wallet, Settings,
   TrendingUp, RefreshCw, ExternalLink, ChevronLeft, ChevronRight
 } from 'lucide-react';
-
-// // Inject Tailwind CDN script cleanly with global readiness check
-// if (typeof document !== 'undefined' && !document.getElementById('tailwind-cdn-script')) {
-//   const script = document.createElement('script');
-//   script.id = 'tailwind-cdn-script';
-//   script.src = 'https://cdn.tailwindcss.com';
-//   document.head.appendChild(script);
-// }
-
+import logo from './favicon.svg';
 import "./index.css"
 
 const playSound = (type) => {
@@ -66,75 +58,17 @@ const playSound = (type) => {
   }
 };
 
-const INITIAL_DATE_IDEAS = [
-  { id: 1, category: 'outdoor', title: 'Sunset Picnic at the Park', completed: true, location: 'City Park' },
-  { id: 2, category: 'outdoor', title: 'Stargazing with Hot Cocoa', completed: false, location: 'Overlook Point' },
-  { id: 3, category: 'sport', title: 'Bouldering / Rock Climbing Class', completed: false, location: 'Gravity Gym' },
-  { id: 4, category: 'sport', title: 'Late Night Bowling Challenge', completed: true, location: 'Retro Lanes' },
-  { id: 5, category: 'art', title: 'Pottery Painting Studio Session', completed: false, location: 'Clay & Co' },
-  { id: 6, category: 'art', title: 'Visit Local Contemporary Museum', completed: true, location: 'Downtown Art Hub' },
-  { id: 7, category: 'indoor', title: 'Homemade Pasta Cooking Night', completed: false, location: 'At Home' },
-  { id: 8, category: 'indoor', title: 'Cozy Board Game Marathon & Boba', completed: false, location: 'Living Room' },
-];
-
-const INITIAL_GALLERY = [
-  {
-    id: 'g1',
-    url: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&q=80&w=800',
-    caption: 'Adopted our calico friend! 🐾',
-    date: '2026-02-10',
-    category: 'Memory'
-  },
-  {
-    id: 'g2',
-    url: 'https://images.unsplash.com/photo-1533738363-b7f9aef128ce?auto=format&fit=crop&q=80&w=800',
-    caption: 'Sunny afternoon coffee run',
-    date: '2026-02-14',
-    category: 'Date Night'
-  },
-  {
-    id: 'g3',
-    url: 'https://images.unsplash.com/photo-1573865526739-10659fec78a5?auto=format&fit=crop&q=80&w=800',
-    caption: 'Sleepy calico hours ~',
-    date: '2026-02-18',
-    category: 'Pets'
-  }
-];
-
-const INITIAL_MESSAGES = [
-  { id: 'm1', sender: 'partner', text: 'Hey cutie! Don’t forget to check our checklists for this week! 🐱✨', time: '10:14 AM' },
-  { id: 'm2', sender: 'user', text: 'I saw! Added pottery painting to our list 🎨', time: '10:16 AM' },
-  { id: 'm3', sender: 'partner', text: 'Awesome! Let’s toss a coin on who picks dinner later! 🪙', time: '10:18 AM' }
-];
-
-const INITIAL_AGENDA = [
-  { id: 'a1', title: 'Sunset Picnic & Coffee', date: '2026-02-21', time: '05:30 PM', location: 'City Park Overlook', notes: 'Bring cozy blanket & boba tea' },
-  { id: 'a2', title: 'Pottery Painting Workshop', date: '2026-02-28', time: '02:00 PM', location: 'Clay & Co Studio', notes: 'Reservation under Alex' }
-];
-
-const INITIAL_TORI_TODOS = [
-  { id: 't1', text: 'Water bedroom plants & succulents', completed: false, category: 'Personal' },
-  { id: 't2', text: 'Restock skincare favorites', completed: true, category: 'Shopping' },
-  { id: 't3', text: 'Finish reading book chapter 5', completed: false, category: 'Personal' }
-];
-
-const INITIAL_MOTMOT_TODOS = [
-  { id: 'i1', text: 'Clean coffee grinder & fresh beans', completed: true, category: 'Chore' },
-  { id: 'i2', text: 'Gym workout / Leg day session', completed: false, category: 'Fitness' },
-  { id: 'i3', text: 'Review project code updates', completed: false, category: 'Work' }
-];
-
 export default function App() {
   // Auth state
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [, setUser] = useState(null);
-  const [email, setEmail] = useState('meow@calicocorner.app');
-  const [password, setPassword] = useState('calicocat123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const partnerName = 'Tori & Motmot';
 
   // Chat State
-  const [messages, setMessages] = useState(INITIAL_MESSAGES);
+  const [messages, setMessages] = useState([]);
   const [newMessageText, setNewMessageText] = useState('');
 
   // Tailwind CSS loaded listener state to prevent unstyled flash
@@ -145,8 +79,8 @@ export default function App() {
 
   // Feature: To-Do Lists for Tori & Motmot
   const [todoUserTab, setTodoUserTab] = useState('tori'); // 'tori' | 'motmot'
-  const [toriTodos, setToriTodos] = useState(INITIAL_TORI_TODOS);
-  const [motmotTodos, setMotmotTodos] = useState(INITIAL_MOTMOT_TODOS);
+  const [toriTodos, setToriTodos] = useState([]);
+  const [motmotTodos, setMotmotTodos] = useState([]);
   const [newTodoText, setNewTodoText] = useState('');
   const [newTodoCategory, setNewTodoCategory] = useState('Personal');
 
@@ -164,14 +98,14 @@ export default function App() {
   const [savedCats, setSavedCats] = useState([]);
 
   // Feature: Date Ideas State
-  const [dateIdeas, setDateIdeas] = useState(INITIAL_DATE_IDEAS);
+  const [dateIdeas, setDateIdeas] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [newIdeaTitle, setNewIdeaTitle] = useState('');
   const [newIdeaCategory, setNewIdeaCategory] = useState('outdoor');
   const [newIdeaLocation, setNewIdeaLocation] = useState('');
 
   // Feature: Plans / Date Agenda State
-  const [agenda, setAgenda] = useState(INITIAL_AGENDA);
+  const [agenda, setAgenda] = useState([]);
   const [planTitle, setPlanTitle] = useState('');
   const [planDate, setPlanDate] = useState('');
   const [planTime, setPlanTime] = useState('');
@@ -179,7 +113,7 @@ export default function App() {
   const [planNotes, setPlanNotes] = useState('');
 
   // Feature: Gallery State
-  const [gallery, setGallery] = useState(INITIAL_GALLERY);
+  const [gallery, setGallery] = useState([]);
   const [galleryPage, setGalleryPage] = useState(1);
   const [photosPerPage, setPhotosPerPage] = useState(6);
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -192,8 +126,8 @@ export default function App() {
   const [sheetId, setSheetId] = useState('');
   const [cellRange, setCellRange] = useState('A1');
   const [apiKey, setApiKey] = useState('');
-  const [galaFundAmount, setGalaFundAmount] = useState(15000); // Default fallback fund amount
-  const [galaGoal, setGalaGoal] = useState(50000);
+  const [galaFundAmount, setGalaFundAmount] = useState(0);
+  const [galaGoal, setGalaGoal] = useState(0);
   const [currencySymbol, setCurrencySymbol] = useState('₱');
   const [isSyncingSheet, setIsSyncingSheet] = useState(false);
   const [sheetError, setSheetError] = useState('');
@@ -268,7 +202,7 @@ export default function App() {
           throw new Error('Could not access Google Sheet. Make sure your sheet is set to "Anyone with link can view".');
         }
         const text = await response.text();
-        
+
         // Extract JSON payload from Google Visualization response wrappers
         const jsonMatch = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);/);
         if (jsonMatch && jsonMatch[1]) {
@@ -324,10 +258,7 @@ export default function App() {
   const sendNotification = (title, body) => {
     if ('Notification' in window && Notification.permission === 'granted') {
       try {
-        new Notification(title, {
-          body,
-          icon: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&q=80&w=100'
-        });
+        new Notification(title, { body });
       } catch (e) {
         console.warn('Push fallback:', e);
       }
@@ -348,7 +279,7 @@ export default function App() {
     playSound('coin');
 
     const result = Math.random() < 0.5 ? 'heads' : 'tails';
-    
+
     setTimeout(() => {
       setCoinSide(result);
       setIsFlipping(false);
@@ -368,7 +299,7 @@ export default function App() {
       if (catData && catData[0]?.url) {
         setKittenUrl(catData[0].url);
       } else {
-        setKittenUrl('https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&q=80&w=800');
+        setKittenUrl('');
       }
 
       const factRes = await fetch('https://catfact.ninja/fact');
@@ -376,11 +307,11 @@ export default function App() {
       if (factData?.fact) {
         setCatFact(factData.fact);
       } else {
-        setCatFact('Calico cats are almost always female due to genetic chromosomes! 🐈');
+        setCatFact('');
       }
     } catch (error) {
-      setKittenUrl('https://images.unsplash.com/photo-1533738363-b7f9aef128ce?auto=format&fit=crop&q=80&w=800');
-      setCatFact('Calico cats bring buena suerte (good luck) in Japanese and Irish folklore!');
+      setKittenUrl('');
+      setCatFact('');
     } finally {
       setIsLoadingCat(false);
     }
@@ -489,10 +420,10 @@ export default function App() {
 
   const handleAddGalleryPhoto = (e) => {
     e.preventDefault();
-    const photoUrl = previewImage || 'https://images.unsplash.com/photo-1573865526739-10659fec78a5?auto=format&fit=crop&q=80&w=800';
+    if (!previewImage) return;
     const newPhoto = {
       id: 'g_' + Date.now(),
-      url: photoUrl,
+      url: previewImage,
       caption: newImageCaption || 'Our special moment ✨',
       date: new Date().toISOString().split('T')[0],
       category: newImageCategory
@@ -519,28 +450,6 @@ export default function App() {
     setMessages(prev => [...prev, userMsg]);
     setNewMessageText('');
     playSound('pop');
-
-    setTimeout(() => {
-      const partnerReplies = [
-        'Aww love this! Calico high five! 🐾',
-        'Can’t wait! Check our checklists page too! 📅',
-        'Sounds amazing! Did you toss the coin on it? 🪙',
-        'Check out today’s Daily Kitten picture too! So cute! 🐱'
-      ];
-      const randomReply = partnerReplies[Math.floor(Math.random() * partnerReplies.length)];
-      const partnerMsg = {
-        id: 'm_partner_' + Date.now(),
-        sender: 'partner',
-        text: randomReply,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
-      setMessages(prev => [...prev, partnerMsg]);
-      playSound('pop');
-
-      if (notificationsEnabled) {
-        sendNotification(`New message from ${partnerName} 💕`, randomReply);
-      }
-    }, 2000);
   };
 
   if (!isAuthenticated) {
@@ -583,7 +492,6 @@ export default function App() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="meow@calicocorner.app"
                 className="w-full px-4 py-3 bg-[#FFFDF9] border border-[#E8D8C8] rounded-xl focus:ring-2 focus:ring-[#E67E22] focus:outline-none text-[#2C2421] text-sm"
               />
             </div>
@@ -598,7 +506,6 @@ export default function App() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
                   className="w-full px-4 py-3 bg-[#FFFDF9] border border-[#E8D8C8] rounded-xl focus:ring-2 focus:ring-[#E67E22] focus:outline-none text-[#2C2421] text-sm pr-10"
                 />
                 <button
@@ -694,8 +601,8 @@ export default function App() {
                     {todoUserTab === 'tori' ? "Tori's Checklist 💚" : "Motmot's Checklist 🩵"}
                   </h2>
                   <p className="text-xs text-[#8C7A6B]">
-                    {todoUserTab === 'tori' 
-                      ? "Tori's workspace for personal tasks, errands, and shopping!" 
+                    {todoUserTab === 'tori'
+                      ? "Tori's workspace for personal tasks, errands, and shopping!"
                       : "Motmot's workspace for workouts, tech tasks, and personal goals!"}
                   </p>
                 </div>
@@ -734,8 +641,8 @@ export default function App() {
 
                 return (
                   <div className={`p-4 rounded-2xl border mb-6 transition-all shadow-sm ${
-                    isTori 
-                      ? 'bg-gradient-to-r from-emerald-50 to-teal-50/70 border-emerald-200' 
+                    isTori
+                      ? 'bg-gradient-to-r from-emerald-50 to-teal-50/70 border-emerald-200'
                       : 'bg-gradient-to-r from-sky-50 to-blue-50/70 border-sky-200'
                   }`}>
                     <div className="flex justify-between items-center mb-2">
@@ -750,8 +657,8 @@ export default function App() {
                     <div className="w-full h-3 bg-white/80 rounded-full overflow-hidden border border-black/5 shadow-inner">
                       <div
                         className={`h-full transition-all duration-500 rounded-full ${
-                          isTori 
-                            ? 'bg-gradient-to-r from-emerald-500 to-teal-600' 
+                          isTori
+                            ? 'bg-gradient-to-r from-emerald-500 to-teal-600'
                             : 'bg-gradient-to-r from-sky-500 to-blue-600'
                         }`}
                         style={{ width: `${percent}%` }}
@@ -770,7 +677,6 @@ export default function App() {
                   <input
                     type="text"
                     required
-                    placeholder={todoUserTab === 'tori' ? "e.g., Water succulents, skincare restock..." : "e.g., Clean coffee grinder, leg day workout..."}
                     value={newTodoText}
                     onChange={e => setNewTodoText(e.target.value)}
                     className="flex-1 px-3.5 py-2.5 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22] transition-colors"
@@ -872,7 +778,7 @@ export default function App() {
               <p className="text-xs text-[#8C7A6B] mb-6">Powered by Cat API & CATAAS - Daily cuteness boost!</p>
 
               <div className="relative aspect-square max-w-md mx-auto rounded-2xl overflow-hidden shadow-inner bg-[#F8F1E9] mb-4 group border border-[#F5E6D3]">
-                {isLoadingCat ? (
+                {isLoadingCat || !kittenUrl ? (
                   <div className="absolute inset-0 flex flex-col items-center justify-center text-[#8C7A6B]">
                     <Cat className="w-12 h-12 animate-bounce text-[#E67E22]" />
                     <span className="text-xs font-semibold mt-2">Summoning a kitten...</span>
@@ -895,15 +801,17 @@ export default function App() {
                 )}
               </div>
 
-              <div className="p-4 bg-[#FFFDF9] rounded-2xl border border-[#F5E6D3] text-left mb-6">
-                <div className="flex items-center gap-2 mb-1">
-                  <Sparkles className="w-4 h-4 text-[#E67E22]" />
-                  <span className="text-xs font-bold text-[#D35400] uppercase tracking-wider">Cat Trivia Fact</span>
+              {catFact && (
+                <div className="p-4 bg-[#FFFDF9] rounded-2xl border border-[#F5E6D3] text-left mb-6">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Sparkles className="w-4 h-4 text-[#E67E22]" />
+                    <span className="text-xs font-bold text-[#D35400] uppercase tracking-wider">Cat Trivia Fact</span>
+                  </div>
+                  <p className="text-xs text-[#2C2421] leading-relaxed italic">
+                    "{catFact}"
+                  </p>
                 </div>
-                <p className="text-xs text-[#2C2421] leading-relaxed italic">
-                  "{catFact || 'Calico cats are standard luck charms worldwide!'}"
-                </p>
-              </div>
+              )}
 
               <button
                 onClick={fetchRandomCat}
@@ -941,7 +849,7 @@ export default function App() {
                 <Coins className="w-3.5 h-3.5" />
                 <span>Decision Toss</span>
               </div>
-              
+
               <h2 className="text-2xl font-black text-[#2C2421] mb-2">Toss the Coin 🪙</h2>
               <p className="text-xs text-[#8C7A6B] mb-6">Tap to toss and let the Calico Coin decide!</p>
 
@@ -1041,7 +949,6 @@ export default function App() {
                   <input
                     type="text"
                     required
-                    placeholder="Activity title (e.g., Kayaking)"
                     value={newIdeaTitle}
                     onChange={e => setNewIdeaTitle(e.target.value)}
                     className="sm:col-span-2 px-3 py-2 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22]"
@@ -1060,7 +967,6 @@ export default function App() {
                 <div className="flex gap-2">
                   <input
                     type="text"
-                    placeholder="Location / Spot (Optional)"
                     value={newIdeaLocation}
                     onChange={e => setNewIdeaLocation(e.target.value)}
                     className="flex-1 px-3 py-2 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22]"
@@ -1076,6 +982,11 @@ export default function App() {
               </form>
 
               <div className="space-y-2">
+                {dateIdeas.length === 0 && (
+                  <p className="text-xs text-center text-[#8C7A6B] py-8 bg-[#FAF6F0] rounded-2xl border border-dashed border-[#E8D8C8]">
+                    No date ideas yet! Add one above ✨
+                  </p>
+                )}
                 {dateIdeas
                   .filter(d => selectedCategory === 'all' || d.category === selectedCategory)
                   .map((item) => (
@@ -1132,7 +1043,6 @@ export default function App() {
                   <input
                     type="text"
                     required
-                    placeholder="Plan Title (e.g., Sunset Picnic & Boba)"
                     value={planTitle}
                     onChange={e => setPlanTitle(e.target.value)}
                     className="w-full px-3 py-2 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22]"
@@ -1162,14 +1072,12 @@ export default function App() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <input
                     type="text"
-                    placeholder="Location / Spot"
                     value={planLocation}
                     onChange={e => setPlanLocation(e.target.value)}
                     className="px-3 py-2 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22]"
                   />
                   <input
                     type="text"
-                    placeholder="Notes (e.g., bring blankets)"
                     value={planNotes}
                     onChange={e => setPlanNotes(e.target.value)}
                     className="px-3 py-2 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22]"
@@ -1185,6 +1093,11 @@ export default function App() {
               </form>
 
               <div className="space-y-3">
+                {agenda.length === 0 && (
+                  <p className="text-xs text-center text-[#8C7A6B] py-8 bg-[#FAF6F0] rounded-2xl border border-dashed border-[#E8D8C8]">
+                    No plans scheduled yet! Add one above ✨
+                  </p>
+                )}
                 {agenda.map((item) => (
                   <div
                     key={item.id}
@@ -1268,25 +1181,31 @@ export default function App() {
                 </div>
 
                 {/* Photo Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-                  {currentPhotos.map((photo) => (
-                    <div
-                      key={photo.id}
-                      onClick={() => setActiveLightbox(photo)}
-                      className="group relative aspect-square rounded-2xl overflow-hidden bg-[#F8F1E9] border border-[#F5E6D3] cursor-pointer shadow-sm hover:shadow-md transition-all"
-                    >
-                      <img
-                        src={photo.url}
-                        alt={photo.caption}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-4 flex flex-col justify-end text-white">
-                        <p className="font-bold text-xs">{photo.caption}</p>
-                        <p className="text-[10px] text-amber-200">{photo.date} • {photo.category}</p>
+                {gallery.length === 0 ? (
+                  <p className="text-xs text-center text-[#8C7A6B] py-8 bg-[#FAF6F0] rounded-2xl border border-dashed border-[#E8D8C8] mb-6">
+                    No photos yet! Upload your first memory ✨
+                  </p>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+                    {currentPhotos.map((photo) => (
+                      <div
+                        key={photo.id}
+                        onClick={() => setActiveLightbox(photo)}
+                        className="group relative aspect-square rounded-2xl overflow-hidden bg-[#F8F1E9] border border-[#F5E6D3] cursor-pointer shadow-sm hover:shadow-md transition-all"
+                      >
+                        <img
+                          src={photo.url}
+                          alt={photo.caption}
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-4 flex flex-col justify-end text-white">
+                          <p className="font-bold text-xs">{photo.caption}</p>
+                          <p className="text-[10px] text-amber-200">{photo.date} • {photo.category}</p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
 
                 {/* Pagination Controls */}
                 <div className="pt-4 border-t border-[#F5E6D3] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#8C7A6B]">
@@ -1387,7 +1306,6 @@ export default function App() {
                         <input
                           type="text"
                           required
-                          placeholder="Caption"
                           value={newImageCaption}
                           onChange={e => setNewImageCaption(e.target.value)}
                           className="w-full px-3 py-2 bg-[#FFFDF9] border border-[#E0D0C0] rounded-xl text-xs"
@@ -1464,13 +1382,13 @@ export default function App() {
                     <div className="flex justify-between items-center text-xs font-bold mb-1.5">
                       <span className="text-blue-100">Target Goal: {currencySymbol}{galaGoal.toLocaleString()}</span>
                       <span className="text-emerald-300 font-extrabold">
-                        {Math.min(100, Math.round((galaFundAmount / galaGoal) * 100))}% Reached
+                        {galaGoal > 0 ? Math.min(100, Math.round((galaFundAmount / galaGoal) * 100)) : 0}% Reached
                       </span>
                     </div>
                     <div className="w-full h-3 bg-black/20 rounded-full overflow-hidden p-0.5 backdrop-blur-xs">
                       <div
                         className="h-full bg-gradient-to-r from-emerald-300 to-amber-300 rounded-full transition-all duration-700"
-                        style={{ width: `${Math.min(100, (galaFundAmount / galaGoal) * 100)}%` }}
+                        style={{ width: `${galaGoal > 0 ? Math.min(100, (galaFundAmount / galaGoal) * 100) : 0}%` }}
                       ></div>
                     </div>
                   </div>
@@ -1492,7 +1410,7 @@ export default function App() {
               {sheetError && (
                 <div className="p-3.5 bg-red-50 border border-red-200 text-red-700 text-xs rounded-2xl mb-6">
                   <p className="font-bold mb-0.5">Sync Alert:</p>
-                  <p>{sheetError}</p>
+                  <p>{sheetError}</p>calico-corner/public/favicon.svg
                 </div>
               )}
 
@@ -1515,7 +1433,6 @@ export default function App() {
                     </label>
                     <input
                       type="text"
-                      placeholder="Paste link or Sheet ID (e.g. 1BxiMVs0XRA5nFMdKvBdB...)"
                       value={sheetId}
                       onChange={(e) => setSheetId(e.target.value)}
                       className="w-full px-3 py-2 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22]"
@@ -1529,7 +1446,6 @@ export default function App() {
                       </label>
                       <input
                         type="text"
-                        placeholder="A1"
                         value={cellRange}
                         onChange={(e) => setCellRange(e.target.value)}
                         className="w-full px-3 py-2 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22]"
@@ -1541,7 +1457,6 @@ export default function App() {
                       </label>
                       <input
                         type="text"
-                        placeholder="₱ or $"
                         value={currencySymbol}
                         onChange={(e) => setCurrencySymbol(e.target.value)}
                         className="w-full px-3 py-2 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22]"
@@ -1567,7 +1482,6 @@ export default function App() {
                     </label>
                     <input
                       type="password"
-                      placeholder="Optional Google API Key"
                       value={apiKey}
                       onChange={(e) => setApiKey(e.target.value)}
                       className="w-full px-3 py-2 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22]"
@@ -1608,9 +1522,9 @@ export default function App() {
       <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-[#F0E4D8] z-40 py-2 px-3 shadow-lg">
         <div className="max-w-md mx-auto flex items-center justify-between">
           {[
-            { id: 'todo', label: 'To-Do', icon: CheckSquare },
             { id: 'kitten', label: 'Kitten', icon: Cat },
             { id: 'coin', label: 'Toss Coin', icon: Coins },
+            { id: 'todo', label: 'To-Do', icon: CheckSquare },
             { id: 'dates', label: 'Ideas', icon: Calendar },
             { id: 'plans', label: 'Agenda', icon: Compass },
             { id: 'gallery', label: 'Gallery', icon: ImageIcon },
