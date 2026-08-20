@@ -5,7 +5,7 @@ import {
   Calendar, Compass, Image as ImageIcon, Camera, X, Wallet, Settings,
   TrendingUp, RefreshCw, ExternalLink, ChevronLeft, ChevronRight
 } from 'lucide-react';
-import logo from './favicon.svg';
+import { supabase } from './utils/supabase';
 import "./index.css"
 
 const playSound = (type) => {
@@ -65,11 +65,9 @@ export default function App() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [loginError, setLoginError] = useState('');
+  const [authChecked, setAuthChecked] = useState(false);
   const partnerName = 'Tori & Motmot';
-
-  // Chat State
-  const [messages, setMessages] = useState([]);
-  const [newMessageText, setNewMessageText] = useState('');
 
   // Tailwind CSS loaded listener state to prevent unstyled flash
   const [, setTailwindReady] = useState(typeof window !== 'undefined' && !!window.tailwind);
@@ -118,7 +116,7 @@ export default function App() {
   const [photosPerPage, setPhotosPerPage] = useState(6);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [newImageCaption, setNewImageCaption] = useState('');
-  const [newImageCategory] = useState('Memory');
+  const [selectedFile, setSelectedFile] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
   const [activeLightbox, setActiveLightbox] = useState(null);
 
@@ -134,6 +132,7 @@ export default function App() {
   const [lastSyncedTime, setLastSyncedTime] = useState(null);
   const [showSheetSettings, setShowSheetSettings] = useState(false);
 
+  // Initial page setup + Supabase session check
   useEffect(() => {
     // Force light background on root/body to override Vite's default dark CSS template
     document.body.style.backgroundColor = '#FAF6F0';
@@ -160,7 +159,53 @@ export default function App() {
     }
     // Fetch initial Daily Kitten
     fetchRandomCat();
+
+    // Restore Supabase session on load
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setUser(session.user);
+        setIsAuthenticated(true);
+      }
+      setAuthChecked(true);
+    });
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      setIsAuthenticated(!!session);
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, []);
+
+  // Load Supabase data once authenticated
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    supabase.from('todos').select('*').order('created_at', { ascending: false })
+      .then(({ data, error }) => {
+        if (!error && data) {
+          setToriTodos(data.filter(t => t.owner === 'tori'));
+          setMotmotTodos(data.filter(t => t.owner === 'motmot'));
+        }
+      });
+
+    supabase.from('date_ideas').select('*').order('created_at', { ascending: false })
+      .then(({ data, error }) => {
+        if (!error && data) setDateIdeas(data);
+      });
+
+    supabase.from('agenda').select('*').order('date', { ascending: true })
+      .then(({ data, error }) => {
+        if (!error && data) setAgenda(data);
+      });
+
+    supabase.from('gallery').select('*').order('created_at', { ascending: false })
+      .then(({ data, error }) => {
+        if (!error && data) setGallery(data);
+      });
+  }, [isAuthenticated]);
 
   // Fetch Gala funds cell from Google Sheet
   const fetchGalaFunds = async () => {
@@ -265,12 +310,24 @@ export default function App() {
     }
   };
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    setUser({ email, name: 'Calico Lover' });
+    setLoginError('');
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      setLoginError(error.message);
+      return;
+    }
+    setUser(data.user);
     setIsAuthenticated(true);
-    setActiveTab('kitten'); // Always land on Kitten tab after logging in
+    setActiveTab('kitten');
     playSound('success');
+  };
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    setIsAuthenticated(false);
+    setUser(null);
   };
 
   const handleFlipCoin = () => {
@@ -323,134 +380,178 @@ export default function App() {
     playSound('pop');
   };
 
-  const handleToggleDate = (id) => {
-    setDateIdeas(prev =>
-      prev.map(item => (item.id === id ? { ...item, completed: !item.completed } : item))
-    );
-    playSound('pop');
+  const handleToggleDate = async (id) => {
+    const item = dateIdeas.find(d => d.id === id);
+    if (!item) return;
+    const { data, error } = await supabase
+      .from('date_ideas')
+      .update({ completed: !item.completed })
+      .eq('id', id)
+      .select()
+      .single();
+    if (!error && data) {
+      setDateIdeas(prev => prev.map(d => (d.id === id ? data : d)));
+      playSound('pop');
+    }
   };
 
-  const handleAddDateIdea = (e) => {
+  const handleAddDateIdea = async (e) => {
     e.preventDefault();
     if (!newIdeaTitle.trim()) return;
-    const newItem = {
-      id: Date.now(),
-      category: newIdeaCategory,
-      title: newIdeaTitle,
-      completed: false,
-      location: newIdeaLocation || 'To be planned'
-    };
-    setDateIdeas([newItem, ...dateIdeas]);
+    const { data, error } = await supabase
+      .from('date_ideas')
+      .insert({
+        title: newIdeaTitle,
+        category: newIdeaCategory,
+        location: newIdeaLocation || 'To be planned'
+      })
+      .select()
+      .single();
+    if (!error && data) {
+      setDateIdeas([data, ...dateIdeas]);
+      playSound('success');
+    }
     setNewIdeaTitle('');
     setNewIdeaLocation('');
-    playSound('success');
   };
 
-  const handleAddAgendaPlan = (e) => {
+  const handleAddAgendaPlan = async (e) => {
     e.preventDefault();
     if (!planTitle.trim() || !planDate) return;
-    const newPlan = {
-      id: 'a_' + Date.now(),
-      title: planTitle,
-      date: planDate,
-      time: planTime || 'TBD',
-      location: planLocation || 'TBD',
-      notes: planNotes || ''
-    };
-    setAgenda([newPlan, ...agenda]);
+    const { data, error } = await supabase
+      .from('agenda')
+      .insert({
+        title: planTitle,
+        date: planDate,
+        time: planTime || null,
+        location: planLocation || null,
+        notes: planNotes || null
+      })
+      .select()
+      .single();
+    if (!error && data) {
+      setAgenda([data, ...agenda]);
+      playSound('success');
+    }
     setPlanTitle('');
     setPlanDate('');
     setPlanTime('');
     setPlanLocation('');
     setPlanNotes('');
-    playSound('success');
   };
 
-  const handleRemoveAgendaPlan = (id) => {
-    setAgenda(prev => prev.filter(a => a.id !== id));
-    playSound('pop');
+  const handleRemoveAgendaPlan = async (id) => {
+    const { error } = await supabase.from('agenda').delete().eq('id', id);
+    if (!error) {
+      setAgenda(prev => prev.filter(a => a.id !== id));
+      playSound('pop');
+    }
   };
 
-  const handleAddTodoItem = (e) => {
+  const handleAddTodoItem = async (e) => {
     e.preventDefault();
     if (!newTodoText.trim()) return;
-    const newItem = {
-      id: 'td_' + Date.now(),
-      text: newTodoText.trim(),
-      completed: false,
-      category: newTodoCategory
-    };
-    if (todoUserTab === 'tori') {
-      setToriTodos([newItem, ...toriTodos]);
-    } else {
-      setMotmotTodos([newItem, ...motmotTodos]);
+    const { data, error } = await supabase
+      .from('todos')
+      .insert({
+        owner: todoUserTab,
+        text: newTodoText.trim(),
+        category: newTodoCategory
+      })
+      .select()
+      .single();
+    if (!error && data) {
+      if (todoUserTab === 'tori') {
+        setToriTodos([data, ...toriTodos]);
+      } else {
+        setMotmotTodos([data, ...motmotTodos]);
+      }
+      playSound('success');
     }
     setNewTodoText('');
-    playSound('success');
   };
 
-  const handleToggleTodo = (id, targetUser) => {
-    if (targetUser === 'tori') {
-      setToriTodos(prev => prev.map(item => item.id === id ? { ...item, completed: !item.completed } : item));
-    } else {
-      setMotmotTodos(prev => prev.map(item => item.id === id ? { ...item, completed: !item.completed } : item));
+  const handleToggleTodo = async (id, targetUser) => {
+    const list = targetUser === 'tori' ? toriTodos : motmotTodos;
+    const item = list.find(t => t.id === id);
+    if (!item) return;
+    const { data, error } = await supabase
+      .from('todos')
+      .update({ completed: !item.completed })
+      .eq('id', id)
+      .select()
+      .single();
+    if (!error && data) {
+      if (targetUser === 'tori') {
+        setToriTodos(prev => prev.map(t => (t.id === id ? data : t)));
+      } else {
+        setMotmotTodos(prev => prev.map(t => (t.id === id ? data : t)));
+      }
+      playSound('pop');
     }
-    playSound('pop');
   };
 
-  const handleDeleteTodo = (id, targetUser) => {
-    if (targetUser === 'tori') {
-      setToriTodos(prev => prev.filter(item => item.id !== id));
-    } else {
-      setMotmotTodos(prev => prev.filter(item => item.id !== id));
+  const handleDeleteTodo = async (id, targetUser) => {
+    const { error } = await supabase.from('todos').delete().eq('id', id);
+    if (!error) {
+      if (targetUser === 'tori') {
+        setToriTodos(prev => prev.filter(t => t.id !== id));
+      } else {
+        setMotmotTodos(prev => prev.filter(t => t.id !== id));
+      }
+      playSound('pop');
     }
-    playSound('pop');
   };
 
   const handleImageFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreviewImage(reader.result);
-      };
-      reader.readAsDataURL(file);
+      setSelectedFile(file);
+      setPreviewImage(URL.createObjectURL(file));
     }
   };
 
-  const handleAddGalleryPhoto = (e) => {
+  const handleAddGalleryPhoto = async (e) => {
     e.preventDefault();
-    if (!previewImage) return;
-    const newPhoto = {
-      id: 'g_' + Date.now(),
-      url: previewImage,
-      caption: newImageCaption || 'Our special moment ✨',
-      date: new Date().toISOString().split('T')[0],
-      category: newImageCategory
-    };
-    setGallery([newPhoto, ...gallery]);
-    setGalleryPage(1);
+    if (!selectedFile) return;
+
+    const filePath = `${Date.now()}.${selectedFile.name.split('.').pop()}`;
+    const { error: uploadError } = await supabase.storage.from('gallery').upload(filePath, selectedFile);
+    if (uploadError) {
+      console.error('Gallery upload error:', uploadError);
+      return;
+    }
+
+    const { data: { publicUrl } } = supabase.storage.from('gallery').getPublicUrl(filePath);
+
+    const { data, error } = await supabase
+      .from('gallery')
+      .insert({
+        caption: newImageCaption || 'Our special moment ✨',
+        image_url: publicUrl
+      })
+      .select()
+      .single();
+
+    if (!error && data) {
+      setGallery([data, ...gallery]);
+      setGalleryPage(1);
+      playSound('success');
+    }
+
     setShowUploadModal(false);
     setPreviewImage(null);
+    setSelectedFile(null);
     setNewImageCaption('');
-    playSound('success');
   };
 
-  const handleSendMessage = (e) => {
-    e.preventDefault();
-    if (!newMessageText.trim()) return;
-
-    const userMsg = {
-      id: 'm_' + Date.now(),
-      sender: 'user',
-      text: newMessageText,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
-
-    setMessages(prev => [...prev, userMsg]);
-    setNewMessageText('');
-    playSound('pop');
-  };
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen bg-[#FAF6F0] flex items-center justify-center">
+        <Cat className="w-12 h-12 animate-bounce text-[#E67E22]" />
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return (
@@ -481,6 +582,12 @@ export default function App() {
               Trisha & Ian's cozy shared space 🐾
             </p>
           </div>
+
+          {loginError && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl">
+              {loginError}
+            </div>
+          )}
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
@@ -574,7 +681,7 @@ export default function App() {
             </button>
 
             <button
-              onClick={() => setIsAuthenticated(false)}
+              onClick={handleSignOut}
               className="p-2 text-[#8C7A6B] hover:text-[#D35400] hover:bg-[#F8F1E9] rounded-xl transition-all flex items-center gap-1"
               title="Sign Out"
             >
@@ -1194,13 +1301,13 @@ export default function App() {
                         className="group relative aspect-square rounded-2xl overflow-hidden bg-[#F8F1E9] border border-[#F5E6D3] cursor-pointer shadow-sm hover:shadow-md transition-all"
                       >
                         <img
-                          src={photo.url}
+                          src={photo.image_url}
                           alt={photo.caption}
                           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-4 flex flex-col justify-end text-white">
                           <p className="font-bold text-xs">{photo.caption}</p>
-                          <p className="text-[10px] text-amber-200">{photo.date} • {photo.category}</p>
+                          <p className="text-[10px] text-amber-200">{photo.taken_on} • {photo.category}</p>
                         </div>
                       </div>
                     ))}
@@ -1269,10 +1376,10 @@ export default function App() {
                     >
                       <X className="w-5 h-5" />
                     </button>
-                    <img src={activeLightbox.url} alt={activeLightbox.caption} className="w-full max-h-[60vh] object-contain bg-black" />
+                    <img src={activeLightbox.image_url} alt={activeLightbox.caption} className="w-full max-h-[60vh] object-contain bg-black" />
                     <div className="p-6 bg-white">
                       <h3 className="font-bold text-lg text-[#2C2421]">{activeLightbox.caption}</h3>
-                      <p className="text-xs text-[#8C7A6B]">Saved on {activeLightbox.date}</p>
+                      <p className="text-xs text-[#8C7A6B]">Saved on {activeLightbox.taken_on}</p>
                     </div>
                   </div>
                 </div>
@@ -1293,6 +1400,7 @@ export default function App() {
                         <input
                           type="file"
                           accept="image/*"
+                          required
                           onChange={handleImageFileChange}
                           className="w-full text-xs text-[#8C7A6B]"
                         />
@@ -1410,7 +1518,7 @@ export default function App() {
               {sheetError && (
                 <div className="p-3.5 bg-red-50 border border-red-200 text-red-700 text-xs rounded-2xl mb-6">
                   <p className="font-bold mb-0.5">Sync Alert:</p>
-                  <p>{sheetError}</p>calico-corner/public/favicon.svg
+                  <p>{sheetError}</p>
                 </div>
               )}
 
