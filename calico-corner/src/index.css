@@ -38,6 +38,18 @@ select::placeholder {
   animation: spinShuffle 0.6s ease-in-out;
 }
 
+@keyframes hugToastSlide {
+  0% { transform: translateY(-50px) scale(0.9); opacity: 0; }
+  15% { transform: translateY(0) scale(1.04); opacity: 1; }
+  25% { transform: translateY(0) scale(1); opacity: 1; }
+  85% { transform: translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateY(-30px) scale(0.95); opacity: 0; }
+}
+
+.animate-hug-toast {
+  animation: hugToastSlide 5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
 /* ---- Progress Bar Component — Adaptive Theme ---- */
 .progress-bar-card {
   background: linear-gradient(to right, #ecfdf5, rgba(240, 253, 250, 0.7));
@@ -281,6 +293,88 @@ select::placeholder {
   border-color: #3B2A24 !important;
 }
 
+/* Modal and dialog dark mode surface adjustments */
+.dark-mode .bg-white {
+  background-color: #1E1410 !important;
+  color: #FAF6F0 !important;
+}
+
+.dark-mode [role="dialog"],
+.dark-mode .modal-surface {
+  background-color: #1A120E !important;
+  color: #FAF6F0 !important;
+  border-color: #3E2D25 !important;
+}
+
+/* Category badge styling in dark mode */
+.dark-mode .badge-personal {
+  background-color: #064E3B !important;
+  color: #A7F3D0 !important;
+  border-color: #047857 !important;
+}
+.dark-mode .badge-games {
+  background-color: #4C1D95 !important;
+  color: #DDD6FE !important;
+  border-color: #6D28D9 !important;
+}
+.dark-mode .badge-work {
+  background-color: #78350F !important;
+  color: #FDE68A !important;
+  border-color: #B45309 !important;
+}
+.dark-mode .badge-daily {
+  background-color: #0C4A6E !important;
+  color: #BAE6FD !important;
+  border-color: #0284C7 !important;
+}
+.dark-mode .badge-other {
+  background-color: #292524 !important;
+  color: #E7E5E4 !important;
+  border-color: #57534E !important;
+}
+
+/* Date generator modal result card in dark mode */
+.dark-mode .picker-result-card {
+  background: #251B16 !important;
+  border-color: #E67E22 !important;
+  color: #FAF6F0 !important;
+}
+.dark-mode .picker-result-card h4 {
+  color: #FAF6F0 !important;
+}
+.dark-mode .picker-result-card p,
+.dark-mode .picker-result-card span {
+  color: #D6C4B6 !important;
+}
+
+/* Schedule to agenda button in dark mode */
+.dark-mode .btn-schedule-picker {
+  background-color: #2A1C16 !important;
+  color: #FAF6F0 !important;
+  border-color: #E67E22 !important;
+}
+.dark-mode .btn-schedule-picker:hover {
+  background-color: #E67E22 !important;
+  color: #FFFFFF !important;
+}
+
+/* Main surface cards in dark mode */
+.dark-mode .card-surface-container {
+  background-color: #1E1410 !important;
+  border-color: #3E2D25 !important;
+  box-shadow: 0 10px 25px -5px rgba(0,0,0,0.6) !important;
+}
+
+/* Custom file upload trigger label button in dark mode */
+.dark-mode label[for="photo-file-upload"] {
+  background-color: #241712 !important;
+  border-color: #E67E22 !important;
+  color: #FAF6F0 !important;
+}
+.dark-mode label[for="photo-file-upload"]:hover {
+  background-color: #2E1F18 !important;
+}
+
 /* Progress track backgrounds */
 .dark-mode .bg-\[\#E8D8C8\] {
   background-color: #2A1C16 !important;
@@ -370,4 +464,24 @@ select::placeholder {
   border: 2px solid #000000 !important;
   font-weight: 800 !important;
   box-shadow: 0 2px 0 #000000 !important;
+}
+.high-contrast .badge-personal,
+.high-contrast .badge-games,
+.high-contrast .badge-work,
+.high-contrast .badge-daily,
+.high-contrast .badge-other {
+  background-color: #FFFFFF !important;
+  color: #000000 !important;
+  border: 2px solid #000000 !important;
+  font-weight: 800 !important;
+}
+.high-contrast .picker-result-card {
+  background: #FFFFFF !important;
+  border: 2.5px solid #000000 !important;
+  color: #000000 !important;
+}
+.high-contrast .btn-schedule-picker {
+  background: #FFFFFF !important;
+  border: 2.5px solid #000000 !important;
+  color: #000000 !important;
 }
