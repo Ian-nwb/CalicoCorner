@@ -2989,14 +2989,17 @@ export default function App() {
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                   {[
-                    { emoji: '💻', text: 'Coding in Go' },
-                    { emoji: '📚', text: 'Studying for exams' },
+                    { emoji: '💻', text: 'Coding' },
+                    { emoji: '📚', text: 'Studying' },
                     { emoji: '😴', text: 'Napping' },
                     { emoji: '🎮', text: 'Gaming' },
-                    { emoji: '🍽️', text: 'Eating food' },
+                    { emoji: '🍽️', text: 'Eating' },
+                    { emoji: '⏳', text: 'Busy' },
                     { emoji: '🚗', text: 'Commuting' },
                     { emoji: '✨', text: 'Chilling' },
-                    { emoji: '💕', text: 'Missing you' }
+                    { emoji: '💕', text: 'Missing you' },
+                    { emoji: '🎧', text: 'Listening to music' },
+                    { emoji: '📵', text: 'Do not Disturb'}
                   ].map((preset, idx) => (
                     <button
                       key={idx}
@@ -3060,7 +3063,7 @@ export default function App() {
                     maxLength={50}
                     value={customStatusText}
                     onChange={(e) => setCustomStatusText(e.target.value)}
-                    placeholder="e.g. Coding in Go, Cooking dinner..."
+                    placeholder="e.g. Coding, Gaming..."
                     className="flex-1 px-3 py-2.5 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22] text-[#2C2421] placeholder:text-[#8C7A6B]/70"
                   />
                 </div>
