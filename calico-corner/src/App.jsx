@@ -3022,30 +3022,19 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Emoji Selector Row */}
+              {/* Custom Emoji Input */}
               <div>
                 <label className="block text-[11px] font-bold text-[#5D4037] mb-1.5 uppercase tracking-wider">
-                  Pick Emoji
+                  Emoji
                 </label>
-                <div className="flex flex-wrap gap-1.5">
-                  {['💻', '📚', '😴', '🎮', '🍽️', '🚗', '✨', '💕', '🎧', '🏋️', '🐱', '☕', '🧹', '🎬'].map((em) => (
-                    <button
-                      key={em}
-                      type="button"
-                      onClick={() => {
-                        setSelectedEmoji(em);
-                        playSound('pop');
-                      }}
-                      className={`w-9 h-9 rounded-xl text-lg flex items-center justify-center border transition-all ${
-                        selectedEmoji === em
-                          ? 'bg-[#E67E22] text-white border-[#E67E22] scale-110 shadow-xs'
-                          : 'bg-[#FAF6F0] border-[#E8D8C8] hover:bg-[#F0E4D8]'
-                      }`}
-                    >
-                      {em}
-                    </button>
-                  ))}
-                </div>
+                <input
+                  type="text"
+                  maxLength={8}
+                  value={selectedEmoji}
+                  onChange={(e) => setSelectedEmoji(e.target.value)}
+                  placeholder="Type an emoji"
+                  className="w-full px-3 py-2.5 bg-white border border-[#E0D0C0] rounded-xl text-lg outline-none focus:border-[#E67E22] text-[#2C2421] placeholder:text-xs placeholder:text-[#8C7A6B]/70"
+                />
               </div>
 
               {/* Custom Status Text Input */}
