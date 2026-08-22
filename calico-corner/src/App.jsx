@@ -1571,7 +1571,8 @@ export default function App() {
                         className="w-full px-3.5 py-2.5 bg-white border border-[#E0D0C0] rounded-xl text-xs outline-none focus:border-[#E67E22] text-[#2C2421]"
                       >
                         <option value="Personal">Personal</option>
-                        <option value="Chore">Games</option>
+                        <option value="Games">Games</option>
+                        <option value="Chores">Chores</option>
                         <option value="Work/School">Work/School</option>
                         <option value="Daily Stuff">Daily Stuff</option>
                         <option value="Other">Other</option>
